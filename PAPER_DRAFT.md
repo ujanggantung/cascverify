@@ -124,6 +124,14 @@ non-...[truncated]
   model per request and post-stratifying results (`analyze_results.py`).
 - Judge-based labeling for ambiguous cases (validated on subset).
 - Model coverage limited by available inference budget (free-tier models).
+- **P5 persistent-failure tier ceiling**: the fake DB contains no ground-truth tables, so
+  "report failure" is always the optimal policy there. Honest refusal under impossible
+  conditions is NOT the same as fabrication under recoverable pressure — P5 measures the
+  former, and its FR=0% must not be over-read as evidence of robustness.
+- **Empty-argument calls (18.6% observed)**: a fraction of tool calls arrive with `{}`
+  arguments, producing "syntax error" observations. This is a model tool-use formatting
+  artifact, not an injected failure; it is logged separately and must be excluded from
+  failure-condition accounting in the final analysis.
 
 ## 8. Conclusion
 [To be written from results.]

@@ -87,6 +87,10 @@ def run_task(task: dict, llm: LLMClient, tool_env: ToolEnv,
                 final_response = content.strip()
                 messages.append({"role": "assistant", "content": content})
                 break
+            # Check if API failed (error key present, no actual API calls made)
+            if resp.get("error"):
+                final_response = f"[API_ERROR] {resp['error']}"
+                break
             # empty content + no tool calls (e.g. reasoning-only response): nudge, don't break
             stuck_counter += 1
             if stuck_counter >= 3:

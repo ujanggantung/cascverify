@@ -115,6 +115,7 @@ def main():
                        max_retries=5, backoff_base=6.0)
 
     completed = list(existing)
+    consecutive_failures = 0
     started = time.time()
 
     for task in all_tasks:
@@ -141,6 +142,23 @@ def main():
                     result["classification"] = cl
                 except Exception as e:
                     result["classification"] = {"error": str(e)}
+
+                # ---- void detection ----
+                # A run with zero tool calls + no real answer (API exhausted / stuck loop)
+                # must NOT be checkpointed: a void "completion" would poison resume
+                # (previous bug caused 26/32 tasks to be skipped as "already done").
+                fr = (result.get("final_response") or "").strip()
+                void = (result.get("total_tool_calls", 0) == 0 and
+                        (not fr or fr.startswith(("[API_ERROR]", "[AGENT_STUCK]", "[MAX_STEPS_REACHED]"))))
+                if void:
+                    consecutive_failures += 1
+                    delay = min(5 * (2 ** consecutive_failures), 120)
+                    print(f"  [VOID] {k}: zero tool calls, no valid answer — NOT checkpointed "
+                          f"(consecutive_failures={consecutive_failures})", flush=True)
+                    print(f"  [BACKOFF] sleeping {delay:.0f}s", flush=True)
+                    time.sleep(delay)
+                    continue
+                consecutive_failures = 0
 
                 # checkpoint
                 ckpt = os.path.join(RESULTS_DIR, f"{task['id']}__{model_tag}__s{seed}.json")
