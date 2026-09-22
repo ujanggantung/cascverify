@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Results (raw experiment checkpoint data — large, regenerable)
+results/*.json
+results/legacy_v1_buggy/
+
+# Logs
+*.log
+
+# Secrets (never commit)
+.env
+*.key
+*api_key*
