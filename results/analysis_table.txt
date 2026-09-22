@@ -1,0 +1,7 @@
+## Per-served-model results (CascToolBench v0.1)
+
+| Served model | Runs | Purity | Tool calls | FAB | FR | Honest-handling | MCI | AvgCD | MaxCD | Patterns |
+|---|---|---|---|---|---|---|---|---|---|---|
+| deepseek-v4-flash | 1 | 42% | 47 | 0 | 0.00% | 100% | 0.000 | 0 | 0 | contained:1 |
+
+**Global:** 1 runs, TOI=100.00%, FR=0.00%, avgMCI=0.0000, avgCD=0, maxCD=0, fabricating runs=0

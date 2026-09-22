@@ -1,0 +1,5 @@
+# CascToolBench — runtime deps
+# Core package is stdlib-only (urllib, json, random) by design for portability.
+# These are optional conveniences:
+pytest>=7.0        # run tests/test_verifier.py
+# PyMuPDF          # only needed for reading competitor PDFs (scripts/), not the benchmark

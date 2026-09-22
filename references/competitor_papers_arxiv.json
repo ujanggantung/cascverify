@@ -1,0 +1,145 @@
+[
+  {
+    "arxiv_id": "2412.04141",
+    "title": "Reducing Tool Hallucination via Reliability Alignment",
+    "abstract": "Large Language Models (LLMs) have expanded their capabilities beyond language generation to interact with external tools, enabling automation and real-world applications. However, tool hallucinations, where models either select inappropriate tools or misuse them, pose significant challenges, leading to erroneous task execution, increased computational costs, and reduced system reliability. To systematically address this issue, we define and categorize tool hallucinations into two main types, tool selection hallucination and tool usage hallucination. To evaluate and mitigate these issues, we introduce RelyToolBench, which integrates specialized test cases and novel metrics to assess hallucination-aware task success and efficiency. Finally, we propose Relign, a reliability alignment framework that expands the tool-use action space to include indecisive actions, allowing LLMs to defer tool use, seek clarification, or adjust tool selection dynamically. Through extensive experiments, we demonstrate that Relign significantly reduces tool hallucinations, improves task reliability, and enhances the efficiency of LLM tool interactions.",
+    "published": "2024-12-05",
+    "authors": [
+      "Hongshen Xu",
+      "Zichen Zhu",
+      "Lei Pan",
+      "Zihan Wang",
+      "Su Zhu",
+      "Da Ma",
+      "Ruisheng Cao",
+      "Lu Chen",
+      "Kai Yu"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2412.04141_Reducing_Tool_Hallucination_via_Reliability_Alignm.pdf",
+    "pdf_status": "ok",
+    "label": "Reducing Tool Hallucination via Reliability Alignment (PMLR 2025)"
+  },
+  {
+    "arxiv_id": "2609.19425",
+    "title": "Closed-World Resolution Against Tool Hallucination in LLM Agents",
+    "abstract": "Tool-augmented large language model (LLM) agents fail in a way no tool-selection or tool-security method addresses: they call tools that do not exist and pass arguments no schema declares. Existing defenses either pick the right tool (selection) or constrain what an agent may do with real tools (gating), both of which presuppose the emitted call refers to a real tool at all. We show this is a structural blind spot: a hallucinated call is by construction not a decision any gate made, so no gate can reject it. This paper is primarily a measurement and benchmark study. We give a five-class taxonomy of tool hallucination (H1-H5) and, as a reference point, the Resolution Rung: a training-free, closed-world resolver (registry membership plus a signature check) whose interest is where it must sit, not what it computes. We prove hallucination defense must precede any causal gate, and characterize the one irreducible residue (borrowed arguments schema-indistinguishable from a valid call). Across ten hosted models under two invocation surfaces we measure 322 genuine hallucinations; fabricated-tool calls concentrate on the unconstrained raw-JSON surface (34 vs. 3), and model scale does not help (a 675B model matches a 7-8B one). We then extend to the Model Context Protocol, where merging several servers into one namespace creates hallucination surfaces a single registry cannot express (a second taxonomy, M1-M5); on the live MCP surface we measure 154 hallucinations, including from frontier models that were clean on the single-registry surface, because collisions and shadowing are structural to the merge. We release the versioned Hallucinated-Tools Benchmark (HTB) so any resolver is comparable across submissions.",
+    "published": "2026-09-16",
+    "authors": [
+      "Laxmipriya Ganesh Iyer"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2609.19425_Closed-World_Resolution_Against_Tool_Hallucination.pdf",
+    "pdf_status": "ok",
+    "label": "Closed-World Resolution Against Tool Hallucination in LLM Agents"
+  },
+  {
+    "arxiv_id": "2510.22977",
+    "title": "The Reasoning Trap: How Enhancing LLM Reasoning Amplifies Tool Hallucination",
+    "abstract": "Enhancing the reasoning capabilities of Large Language Models (LLMs) is a key strategy for building Agents that \"think then act.\" However, recent observations, like OpenAI's o3, suggest a paradox: stronger reasoning often coincides with increased hallucination, yet no prior work has systematically examined whether reasoning enhancement itself causes tool hallucination. To address this gap, we pose the central question: Does strengthening reasoning increase tool hallucination? To answer this, we introduce SimpleToolHalluBench, a diagnostic benchmark measuring tool hallucination in two failure modes: (i) no tool available, and (ii) only distractor tools available. Through controlled experiments, we establish three key findings. First, we demonstrate a causal relationship: progressively enhancing reasoning through RL increases tool hallucination proportionally with task performance gains. Second, this effect transcends overfitting - training on non-tool tasks (e.g., mathematics) still amplifies subsequent tool hallucination. Third, the effect is method-agnostic, appearing when reasoning is instilled via supervised fine-tuning and when it is merely elicited at inference by switching from direct answers to step-by-step thinking. We also evaluate mitigation strategies including Prompt Engineering and Direct Preference Optimization (DPO), revealing a fundamental reliability-capability trade-off: reducing hallucination consistently degrades utility. Mechanistically, Reasoning RL disproportionately collapses tool-reliability-related representations, and hallucinations surface as amplified divergences concentrated in late-layer residual streams. These findings reveal that current reasoning enhancement methods inherently amplify tool hallucination, highlighting the need for new training objectives that jointly optimize for capability and reliability.",
+    "published": "2025-10-27",
+    "authors": [
+      "Chenlong Yin",
+      "Zeyang Sha",
+      "Shiwen Cui",
+      "Changhua Meng",
+      "Zechao Li"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2510.22977_The_Reasoning_Trap_How_Enhancing_LLM_Reasoning_Amp.pdf",
+    "pdf_status": "ok",
+    "label": "The Reasoning Trap: How Enhancing LLM Reasoning Amplifies Tool Hallucination"
+  },
+  {
+    "arxiv_id": "2609.14758",
+    "title": "Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return",
+    "abstract": "Tool-augmented language models are evaluated on whether they reach the right answer, not on whether they report honestly when a tool fails to supply one. We isolate this post-failure decision with a benchmark of 1,024 items spanning 16 internal-system domains and eight tool-failure types, in which a tool call is enforced and the returned payload is guaranteed to be unusable. Under a deployment-style system prompt, 14.10% of responses are dishonest: the model either asserts a value the payload cannot support or declines while citing a fabricated policy or capability limit. The rate is governed almost entirely by whether the failure is signalled. When the tool returns status:error, dishonesty is absent (0.0%); when it returns status:ok with a redacted, corrupted, stale, malformed, empty or truncated value, dishonesty reaches 45.3%. The behaviour is not an artefact of our prompts: it appears under a neutral prompt (10.17%) and under the shipped prompt of every production agent framework we evaluate, reaching 24.67% under CrewAI's, and none of the nine frameworks we audit specifies what the model should do when a tool fails. Comparing prompt-level defences, we find that the operative variable is not deference to tool output but the absence of a named failure state. Appending a single sentence that requires the model to emit retrieval_status: OK or FAILED before answering reduces dishonesty from 14.10% to 0.87%, with one item of 688 worsening against 92 improving, and transfers unchanged into three foreign agent scaffolds. The emitted flag is faithful in 99.7-99.9% of declarations, giving a runtime detector that needs only a regular expression.",
+    "published": "2026-09-13",
+    "authors": [
+      "Arham Sethi",
+      "Arsen Kenzhebayev",
+      "Saanvi Paturi",
+      "Vatsal Raina",
+      "Vyas Raina",
+      "Ivaxi Sheth"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2609.14758_Fabrication_After_Tool_Failure_Tool-Augmented_Agen.pdf",
+    "pdf_status": "ok",
+    "label": "Fabrication After Tool Failure: Tool-Augmented Agents Assert Values Their Tools Did Not Return"
+  },
+  {
+    "arxiv_id": "2607.22962",
+    "title": "ConsistencyGate: Preventing Memory Contamination in LLM Agents via Self-Consistency Admission Control",
+    "abstract": "LLM agents that operate over many turns accumulate facts in an external memory store and reuse them as premises for downstream reasoning. A hallucinated fact written at one step therefore persists as a false premise for every subsequent step, a failure mode we call memory contamination. Existing memory management addresses retrieval and capacity but not write-time correctness; this admission problem cannot be solved by utility- or recency-based criteria, and uncontrolled contamination compounds across long trajectories. We propose ConsistencyGate, a write-time admission gate that, before committing a candidate fact m extracted from context c, queries the LLM K times for a soft support score and admits m only when the average exceeds a threshold. The mechanism is model-agnostic, requires no fine-tuning, and reduces to a single forward pass in a log-probability variant for latency-sensitive deployments. To measure the effect on natural data, we construct two real-conversation benchmarks (LoCoMo-Contam and MSC-Contam) by planting controlled single-detail corruptions in long-term conversations from LoCoMo and MSC, and complement them with a structured synthetic corpus (MemContam) that isolates a near-oracle upper bound. Across four LLM backbones, ConsistencyGate reduces contamination on every benchmark relative to a write-everything baseline, with the cost concentrated on facts that are stated only implicitly in the source context. We release all three benchmarks together with the gate implementation.",
+    "published": "2026-07-25",
+    "authors": [
+      "Yan Zhang",
+      "Shibo Li"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2607.22962_ConsistencyGate_Preventing_Memory_Contamination_in.pdf",
+    "pdf_status": "ok",
+    "label": "ConsistencyGate: Preventing Memory Contamination in LLM Agents"
+  },
+  {
+    "arxiv_id": "2605.17830",
+    "title": "Remembering More, Risking More: Longitudinal Safety Risks in Memory-Equipped LLM Agents",
+    "abstract": "Safety evaluations of memory-equipped LLM agents typically measure within-task safety: whether an agent completes a single scenario safely, often under adversarial conditions such as prompt injection or memory poisoning. In deployment, however, a single agent serves many independent tasks over a long horizon, and memory accumulated during earlier tasks can affect behavior on later, unrelated ones. Studying this regime requires evaluation along the temporal dimension across tasks: not whether an agent is safe at any single memory state, but how its safety profile changes as memory accumulates across many independent interactions. We call this failure mode temporal memory contamination. To isolate memory exposure from stream non-stationarity, we introduce a trigger-probe protocol that evaluates a fixed probe set against read-only memory snapshots at varying prefix lengths, together with a NullMemory counterfactual baseline for identifying memory-induced violations. We apply this protocol across three deployment scenarios spanning records, memos, forms, and email correspondence and eight memory architectures, and additionally on Claw-like AI agents, such as OpenClaw, using the platform's native memory mechanism. Memory-enabled agents consistently exceed the NullMemory baseline, and memory-induced violation rates show a robust upward trend with exposure length on both agent classes. Order-randomization experiments indicate that the effect is driven primarily by accumulated content rather than encounter order. Finally, a structural consequence of the event decomposition is that memory-induced risk is detectable from retrieval state before generation, which we confirm with a high-recall diagnostic monitor. Our results argue for treating memory safety as a longitudinal property that requires temporal evaluation, not a single-state property that can be captured by a snapshot.",
+    "published": "2026-05-18",
+    "authors": [
+      "Ahmad Al-Tawaha",
+      "Shangding Gu",
+      "Peizhi Niu",
+      "Ruoxi Jia",
+      "Ming Jin"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2605.17830_Remembering_More_Risking_More_Longitudinal_Safety_.pdf",
+    "pdf_status": "ok",
+    "label": "Remembering More, Risking More: Longitudinal Safety Risks in Memory-Equipped LLM Agents"
+  },
+  {
+    "arxiv_id": "2609.09754",
+    "title": "LexAgentHallu: A Hierarchical Benchmark for Profiling Hallucinations in Legal Agents",
+    "abstract": "As large language models are increasingly deployed as tool-augmented legal agents, they introduce agentic hallucinations where tool-call and reasoning errors cascade into fabricated holdings and miscited authority. However, existing legal benchmarks evaluate only single-turn QA with outcome-level metrics, while agentic hallucination benchmarks lack legal-specific diagnostic capability. Neither answers to what extent and how a legal agent hallucinates along its trajectory. To address these limitations, we introduce LexAgentHallu, a legal agentic hallucination benchmark designed to evaluate to what extent and how legal agents fail along multi-step trajectories. Built through a four-stage expert-in-the-loop pipeline, LexAgentHallu contains 3414 instances across 17 legal categories and 6 task types. Each instance is annotated under a dual-layer hallucination taxonomy of 7 high-level categories and 27 fine-grained subclasses, covering both substantive errors and agent-procedural failures. We further design fine-grained metrics that quantify to what extent and localize how each failure occurs along an agent's execution path. Our evaluation across 18 proprietary and open-source agents uncovers a Right-Answer-Wrong-Reason effect and reveals that hallucination subclasses cluster rather than scatter, forming distinct agentic framework, legal task, and category profiles. These findings, invisible to outcome-level evaluation, validate the diagnostic power of LexAgentHallu for evaluating agentic hallucination in law.",
+    "published": "2026-09-09",
+    "authors": [
+      "Yujin Zhou",
+      "Mingxuan Zheng",
+      "Chuxue Cao",
+      "Huang Yidan",
+      "Jiale Chen",
+      "Yike Guo",
+      "Sirui Han"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2609.09754_LexAgentHallu_A_Hierarchical_Benchmark_for_Profili.pdf",
+    "pdf_status": "ok",
+    "label": "LexAgentHallu: Hierarchical Benchmark for Profiling Hallucinations in Legal Agents"
+  },
+  {
+    "arxiv_id": "2605.12240",
+    "title": "No Action Without a NOD: A Heterogeneous Multi-Agent Architecture for Reliable Service Agents",
+    "abstract": "Large language model (LLM) agents have increasingly advanced service applications, such as booking flight tickets. However, these service agents suffer from unreliability in long-horizon tasks, as they often produce policy violations, tool hallucinations, and misaligned actions, which greatly impedes their real-world deployment. To address these challenges, we propose NOD (Navigator-Operator-Director), a heterogeneous multi-agent architecture for service agents. Instead of maintaining task state implicitly in dialogue context as in prior work, we externalize a structured Global State to enable explicit task state tracking and consistent decision-making by the Navigator. Besides, we introduce selective external oversight before critical actions, allowing an independent Director agent to verify execution and intervene when necessary. As such, NOD effectively mitigates error propagation and unsafe behavior in long-horizon tasks. Experiments on $τ^2$-Bench demonstrate that NOD achieves higher task success rates and critical action precision over baselines. More importantly, NOD improves the reliability of service agents by reducing policy violations, tool hallucinations, and user-intent misalignment.",
+    "published": "2026-05-12",
+    "authors": [
+      "Zixu Yang",
+      "Hang Zheng",
+      "Nan Jiang",
+      "Zhiyang Tang",
+      "Situo Zhang",
+      "Xiaobao Wu",
+      "Lu Chen",
+      "Kai Yu"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2605.12240_No_Action_Without_a_NOD_A_Heterogeneous_Multi-Agen.pdf",
+    "pdf_status": "ok",
+    "label": "No Action Without a NOD: Heterogeneous Multi-Agent for Reliable Service Agents"
+  },
+  {
+    "arxiv_id": "2609.15319",
+    "title": "Clean Scores, Buried Evidence, and Confident Wrong: A Receipt-Based Audit of Frontier Agentic QA",
+    "abstract": "Frontier models score well on shallow document/chart reading tasks. In a controlled data-room audit, moving evidence into buried conditions reduced accuracy, increased forced declarations, increased tool calls, and increased cost per correct answer. Confidence and benchmark calibration did not fully capture wrong answers; a documented production incident shows fabricated structural claims can be mixed with accurate numeric tables. Agentic evaluations need claim-level receipts (statement-level provenance, not answer-level scores), condition-aware scoring, and human-adversarial verification - an auditing discipline, not a leaderboard. The setting we measure is financial due diligence; the setting we are building toward next is defense staff work, where the same buried-evidence shape appears. In both, the model is not a party to the consequences; the person who signs is. In plain terms: in the documented cases we examine, agents can pair accurate numbers with confident fabricated explanations, and the burden of proof must therefore move from the model to the evidence trail.",
+    "published": "2026-09-14",
+    "authors": [
+      "Luis M. Sánchez"
+    ],
+    "pdf": "F:\\JURNAL MULAI SEKRANG\\01-tool-hallucination-memory-cascade\\references\\pdfs\\arxiv_2609.15319_Clean_Scores_Buried_Evidence_and_Confident_Wrong_A.pdf",
+    "pdf_status": "ok",
+    "label": "Clean Scores, Buried Evidence, and Confident Wrong: Receipt-Based Audit of Agentic QA"
+  }
+]

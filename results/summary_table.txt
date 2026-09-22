@@ -1,0 +1,15 @@
+============================================================
+CascToolBench RESULTS SUMMARY
+============================================================
+Traces: 1  |  Total tool calls: 47  |  Fabrications: 0
+
+Global Metrics:
+  TOI (Tool Output Integrity):    100.00%
+  FR  (Fabrication Rate):         0.00%
+  MCI (Memory Contamination Idx): 0.0000
+  CD  (Avg Cascade Depth):        0.0  (max: 0)
+  CB  (Avg Cascade Breadth):      0.0
+  Cascade Patterns:               {'contained': 1}
+
+Per Tier:
+============================================================

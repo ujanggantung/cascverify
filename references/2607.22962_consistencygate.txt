@@ -1,0 +1,1490 @@
+ConsistencyGate: Preventing Memory Contamination in LLM
+Agents
+via Self-Consistency Admission Control
+Yan Zhang
+yz18b@fsu.edu
+Department of Computer Science, Florida State University
+Shibo Li∗
+shiboli@cs.fsu.edu
+Department of Computer Science, Florida State University
+Abstract
+LLM agents that operate over many turns accumulate facts in an external memory store
+and reuse them as premises for downstream reasoning. A hallucinated fact written at one
+step therefore persists as a false premise for every subsequent step, a failure mode we call
+memory contamination. Existing memory management addresses retrieval and capacity
+but not write-time correctness; this admission problem cannot be solved by utility- or
+recency-based criteria, and uncontrolled contamination compounds across long trajectories.
+We propose ConsistencyGate, a write-time admission gate that, before committing a
+candidate fact m extracted from context c, queries the LLM K times for a soft support
+score and admits m only when the average exceeds a threshold τ. The mechanism is
+model-agnostic, requires no fine-tuning, and reduces to a single forward pass in a log-
+probability variant for latency-sensitive deployments. To measure the effect on natural
+data, we construct two real-conversation benchmarks (LoCoMo-Contam, MSC-Contam)
+by planting controlled single-detail corruptions in long-term conversations from LoCoMo
+and MSC, and complement them with a structured synthetic corpus (MemContam) that
+isolates a near-oracle upper bound. Across four LLM backbones, ConsistencyGate reduces
+contamination on every benchmark relative to a write-everything baseline, with the cost
+concentrated on facts that are stated only implicitly in the source context. We release all
+three benchmarks together with the gate implementation.
+1. Introduction
+Long-horizon LLM agents accumulate facts in an external memory store and reason over them
+in later steps (Park et al., 2023; Zhou et al., 2023; Wang et al., 2024; Nakano et al., 2022).
+The architecture works only if the writer is reliable: a fact written once is read back many
+times, so any error introduced at write time becomes a false premise for every subsequent
+retrieval. Yet LLMs hallucinate even when extracting from a given context (Ji et al., 2023;
+Maynez et al., 2020; Manakul et al., 2023), so write-time errors are not rare. We study
+the resulting failure mode, which we call memory contamination: the accumulation of
+hallucinated facts in agent memory, and the way these errors compound over long interaction
+trajectories.
+∗. Corresponding author.
+1
+arXiv:2607.22962v1  [cs.AI]  25 Jul 2026
+
+Interaction Turns
+Contamination Rate
+WriteAll
+ConsistencyGate
+(c)  Contamination rate and QA accuracy vs. interaction turns  (Qwen2.5-32B, MemContam)
+QA F1
+WriteAll
+ConsistencyGate
+Figure 1: Memory contamination and the ConsistencyGate mitigation. (Left) A
+baseline agent writes every extracted fact to memory, including hallucinated ones (red), which
+then propagate into downstream answers. (Right) ConsistencyGate samples a verification
+score K times before each write; facts with low average support are rejected and memory
+stays clean. (Bottom) Contamination rate and downstream QA accuracy versus interaction
+turns on MemContam (Qwen2.5-32B-Instruct).
+Memory contamination is distinct from the failure modes existing memory work addresses.
+It is not a retrieval problem: once a fact is stored, even an oracle retriever will surface it.
+It is not a capacity problem: contamination is not removed by eviction policies that rank
+candidates on utility rather than correctness. And it is not addressed by current admission
+policies, which score candidates on novelty, recency, or future utility (Zhang et al., 2026). A
+hallucinated fact such as Alice graduated in 2015 (when context says 2012) is as topically
+relevant, novel, and recent as the correct fact, so utility-based admission is structurally blind
+to contamination. Correctness is therefore an admission criterion that has no substitute in
+existing memory machinery.
+2
+
+We propose ConsistencyGate, a write-time admission gate that scores candidate facts
+on factual support rather than utility. Given a candidate fact m extracted from context
+c, the gate queries the LLM K times with a verification prompt and averages a soft 0–1
+support score; m is admitted only when the average exceeds a threshold τ. The mechanism
+is model-agnostic, requires no fine-tuning, and reduces to a single forward pass in a log-
+probability variant. The threshold τ can be a fixed constant (we recommend τ=0.7) or
+scheduled adaptively against memory occupancy when per-deployment tuning is infeasible.
+To measure contamination on natural data, we construct LoCoMo-Contam and MSC-
+Contam from LoCoMo (Maharana et al., 2024) and MSC (Xu et al., 2022) by planting
+single-detail corruptions in probe facts. We complement these with MemContam, a synthetic
+benchmark whose unambiguous contexts isolate the gate’s behavior in a structured setting.
+Across the three benchmarks and four LLM backbones, ConsistencyGate consistently reduces
+contamination, with the cost concentrated on facts that are stated only implicitly in the
+source context.
+Contributions.
+(i) We characterize memory contamination as a write-time admission
+problem distinct from retrieval and capacity, and show that it compounds across interaction
+trajectories (§3). (ii) We propose ConsistencyGate, a soft-scoring admission criterion that
+admits a candidate fact only when its average support score across K samples exceeds a
+threshold τ; the criterion has two efficiency modes (K-sample default and a single-pass log-
+probability variant) and a deployment fallback (a memory-occupancy-scaled threshold) when
+per-deployment tuning is infeasible (§4). (iii) We construct three benchmarks: MemContam
+(synthetic), LoCoMo-Contam, and MSC-Contam; to our knowledge the latter two are the
+first real-conversation corpora with planted, controllable contamination (§5). All three are
+released. (iv) On the real-conversation benchmarks, ConsistencyGate reduces contamination
+by 31.8% and 26.6% and lifts admission precision by 0.159 and 0.133 points on Qwen2.5-32B,
+with consistent gains across three additional LLM backbones; on MemContam it reaches a
+near-oracle 1.2% contamination at 100% recall (§6).
+2. Background and Related Work
+Memory in LLM agents.
+External memory is a central component of long-horizon LLM
+agents (Park et al., 2023; Shinn et al., 2023; Weng, 2023), with episodic stores for conversation
+history (Zhong et al., 2023; Packer et al., 2024), semantic stores for extracted facts (Hu
+et al., 2023), and procedural stores for learned skills (Wang et al., 2024). We target the write
+process common to all three. Prior memory management has focused on retrieval (which
+stored memories to surface for a given query (Lewis et al., 2020; Gao et al., 2024)) and
+capacity control (what to evict when memory is full). The closest prior work is A-MAC
+(Zhang et al., 2026), which formalizes admission as a separate gate and scores candidate
+writes by a learned utility (novelty, recency, projected retrieval value). A-MAC’s objective is
+marginal usefulness; ConsistencyGate’s is factual support against the source context, and
+the two are not interchangeable: a correct fact and its hallucinated paraphrase have nearly
+identical utility but opposite correctness scores. The two gates are therefore complementary
+rather than competing (§3.2).
+3
+
+Hallucination detection and correction.
+LLM hallucination is widely documented
+(Ji et al., 2023; Bang et al., 2023; Maynez et al., 2020), and a large literature aims to
+detect or repair it. Reference-free signals include atomic-fact decomposition with external
+evidence (FactScore, Min et al., 2023), calibration via the model’s own answer probabilities
+(Kadavath et al., 2022), and self-feedback rewriting (Self-Refine, Madaan et al., 2023; Chain-
+of-Verification, Dhuliawala et al., 2023; RARR, Gao et al., 2023). Retrieval-augmented
+variants such as Self-RAG (Asai et al., 2024) and CRAG (Yan et al., 2024) insert validity
+checks between retrieval and generation. ConsistencyGate sits at a different stage of the
+pipeline: rather than verifying a generated answer or filtering retrieved evidence, it gates
+writes into long-term memory before any downstream retrieval can amplify them. The closest
+point of contact is SelfCheckGPT (Manakul et al., 2023), which detects hallucination in
+generated text by sampling multiple outputs and measuring inter-sample agreement.
+Self-consistency as a verification signal.
+Wang et al. (2023) show that majority-vote
+aggregation over multiple reasoning chains improves reasoning accuracy because correct
+answers are more stable across samples than hallucinated ones. We adapt this principle to
+write-time memory admission: the gate queries the LLM K times and admits a candidate
+fact only when the average support score exceeds a threshold. The key difference from the
+prior self-consistency line is that the source context c is available at admission time, so the
+verifier grounds its judgment on a known evidence chunk rather than on the model’s prior
+alone.
+3. Problem Setup
+3.1 Notation
+Let M = {(mi, ti)} denote an agent’s memory store, where mi is a text-form fact and ti
+is its timestamp. At each step t, the agent observes context ct (a conversation turn, a
+document chunk, or a tool output), and a memory writer W extracts a set of candidate facts
+Ft = W(ct). A memory gate g : Ft × ct →{0, 1}|Ft| decides which facts to admit; admitted
+facts are appended to M.
+We measure memory contamination rate:
+ρ = |{m ∈M : Verify(m) = False}|
+|M|
+,
+(1)
+where Verify(m) returns the gold-label correctness of m against its source context. In our
+three benchmarks Verify is provided by the construction protocol (§5); in deployment it would
+be approximated by audit or human review. Admission precision is 1 −ρ; admission
+recall is the fraction of correct candidates that the gate admits.
+3.2 Contamination Rates and Downstream Cost
+Under the WriteAll baseline (g ≡1), ρ = 50% on all three contaminated benchmarks
+(by construction), and downstream QA F1 collapses to 0.474 on MemContam, 0.227 on
+LoCoMo-Contam, and 0.338 on MSC-Contam (Table 1). The degradation is mechanistic:
+contaminated facts are retrieved alongside correct ones and injected as evidence into the
+answer prompt, so any retriever that does its job propagates the contamination.
+4
+
+Contamination cascades over a trajectory.
+Write-time contamination compounds
+with interaction length. Once a hallucinated fact enters memory, an oracle retriever will still
+surface it; as memory fills, the fraction of contaminated retrievals grows and downstream
+answers depend more on false premises. We call this the contamination cascade and quantify
+it in Figure 2 (§6): an admission error at turn t continues to corrupt turns t+1, t+2, . . . for
+the rest of the trajectory.
+Utility-based admission cannot fix this.
+A hallucinated fact (e.g.,“Alice graduated
+in 2015” when context says 2012) is as topically relevant, novel, and recent as the correct
+fact, so utility-based criteria (relevance scoring, novelty filtering, recency management) are
+structurally blind to contamination. The remedy is to score candidates on whether the source
+context supports them, which is the criterion ConsistencyGate operationalizes in §4.
+4. ConsistencyGate: Self-Consistency Memory Admission
+4.1 Core Algorithm
+ConsistencyGate wraps any existing memory writer with a consistency-checking gate. Given
+a candidate fact m extracted from context c, we score m’s reliability by querying the LLM K
+times with a soft verification prompt that asks the model to rate how strongly m is supported
+by c on a continuous 0–1 scale (exact prompt in Section C):
+sk = L
+ prompt(m, c)
+
+∈[0, 1],
+k = 1, . . . , K,
+(2)
+where sk = 1 means fully supported, sk = 0 means contradicted, and sk = 0.5 means
+ambiguous. The consistency score is the average support across K samples,
+ˆp(m | c) = 1
+K
+K
+X
+k=1
+sk,
+(3)
+and the admission decision is g(m, c) = 1[ˆp(m | c) ≥τ]. Algorithm 1 gives the full procedure.
+We recommend the fixed setting τ=0.7, K=5 as a default (see §6.5), with the adaptive
+schedule of §4.3 as a zero-tuning fallback.
+4.2 Efficient Single-Pass Approximation
+The default soft-scoring implementation issues K LLM calls per candidate fact, which becomes
+expensive when the writer extracts many facts per context. We provide an alternative that
+uses token-level log-probabilities: switch to a binary yes/no prompt and read the score
+from a single forward pass,
+ˆplog(m | c) = softmax
+ 
+log p(yes | prompt), log p(no | prompt)
+
+0
+
+,
+(4)
+which is exposed by most LLM serving stacks.
+The variant runs in 23–28 ms per fact
+across our four backbones (versus 264–363 ms at K=5, a 12−14× speedup) and matches
+or beats soft scoring on structured contexts. We name this asymmetry the bimodality of
+yes/no support: on structured contexts the model’s yes/no token probabilities saturate
+(log P(yes | c, m+) →0 for correct m+, log P(no | c, m−) →0 for corrupted m−), so ˆplog
+5
+
+Algorithm 1 ConsistencyGate Memory Admission
+Require: Candidate fact m, source context c, LLM L, samples K, threshold τ, memory M,
+capacity C
+1: total ←0
+2: for k = 1 to K do
+3:
+prompt ←SoftVerifyPrompt(m, c)
+4:
+sk ←L(prompt) ∈[0, 1]
+5:
+total ←total + sk
+6: end for
+7: ˆp ←total / K
+8: τ ∗←τ
+▷or AdaptiveThreshold(τmin, τmax, |M|, C); see Eq. 5
+9: if ˆp ≥τ ∗then
+10:
+M.add(m)
+11:
+return True
+12: end if
+13: return False
+approximates ˆp in a single forward pass; on long-form conversational contexts the bimodal
+assumption breaks down and K-sample averaging recovers an estimate that one logprob
+query cannot (Section 7).
+4.3 Adaptive Thresholding
+When τ cannot be tuned for a particular model or deployment, we provide an adaptive
+schedule that scales the threshold with memory utilization:
+τ ∗(|M|, C; τmin, τmax) = τmin + (τmax −τmin) · |M|
+C ,
+(5)
+where C is the memory capacity, τmin is the floor at empty memory, and τmax the ceiling
+at full capacity. The schedule is monotone in occupancy: more permissive when memory
+is sparse, and stricter as memory fills. When the operating point can be tuned for the
+deployment, fixed τ=0.7 outperforms the adaptive schedule (§6.5); the adaptive variant is
+recommended only when per-deployment tuning is infeasible.
+5. Benchmarks
+Existing memory benchmarks (Maharana et al., 2024; Xu et al., 2022) lack gold labels for
+fact-level accuracy, making it difficult to measure contamination rates precisely. We introduce
+three complementary benchmarks: a controlled synthetic corpus (MemContam) and two
+real-conversation corpora derived from existing long-term dialogue datasets (LoCoMo-
+Contam, MSC-Contam). All three impose a controlled 50% contamination rate so that
+the contamination metric is comparable across them.
+Evaluation metrics (shared across benchmarks).
+We report: (1) Contamination
+rate ρ (% incorrect among admitted facts, lower is better); (2) Admission precision (%
+6
+
+correct among admitted; equal to 1−ρ); (3) Admission recall (% of correct facts admitted);
+and (4) Downstream QA F1 on question-answer pairs answerable from the correct facts.
+5.1 MemContam (Synthetic)
+Construction.
+We define five fixed source contexts spanning diverse domains (personal
+biography, library record, recipe, science fair report, spacecraft mission log). Each context is
+used to generate 40 independent samples via Qwen2.5-32B-Instruct, yielding 200 samples in
+total with broad lexical variation despite shared underlying entities. For each sample, the
+LLM extracts F = 5 ground-truth facts and generates F ′ = 5 plausible but incorrect variants
+using four corruption strategies: (a) numerical perturbation, (b) negation, (c) proper-noun
+substitution, and (d) appended contradicting clause. The benchmark contains 1,000 correct
+and 1,000 incorrect facts across the 200 contexts, yielding the controlled 50% contamination
+setting. Because corruption (d) appends a literal contradicting clause and the verifier shares
+a model family with the corpus generator, we treat MemContam results as an internal-
+consistency upper bound rather than a deployment headline; deployment-relevant numbers
+come from LoCoMo-Contam and MSC-Contam.
+5.2 LoCoMo-Contam (Real Long-Term Conversations)
+Source data.
+LoCoMo-Contam is built on top of LoCoMo-10 (Maharana et al., 2024), a
+set of 10 long-term dyadic conversations (400–700 turns each, 19–32 sessions per conversation).
+Construction.
+For each of the 10 conversations we select up to N=5 QA pairs whose
+answers are concrete and verifiable (factual or temporal categories). Each QA pair is converted
+into a self-contained fact statement using Qwen2.5-32B-Instruct (e.g.,“Caroline moved from
+Sweden 4 years ago.”), and a corrupted version is generated by prompting the model to change
+exactly one concrete detail to a plausible but incorrect alternative (e.g.,“Caroline moved from
+Germany 4 years ago.”). Both versions are then paraphrased into natural conversational
+turns as if spoken by one of the participants. The resulting benchmark contains 50 probe
+pairs (5 per conversation) at 50% contamination.
+Evaluation protocol.
+The agent first processes the full conversation to populate memory.
+Correct probe facts are then pre-seeded directly into memory (bypassing the gate) to ensure
+that retrieval evidence is always available; this design choice means downstream QA is
+insensitive to gate decisions on probe turns, so the primary signals on this benchmark are the
+contamination rate and admission precision (§6). Each probe turn (correct and corrupted) is
+then presented through the full observe pipeline: the memory writer extracts a fact, the gate
+queries memory for supporting context, and an admission decision is recorded. This tests
+whether the gate can distinguish a claim consistent with established memory from one that
+contradicts it, on real conversational data.
+5.3 MSC-Contam (Persona-Grounded Conversations)
+Source data.
+MSC-Contam is built on top of the Multi-Session Chat dataset (Xu
+et al., 2022), a corpus of dyadic conversations grounded in evolving speaker personas (20
+conversations, 2 sessions each).
+7
+
+Construction.
+Unlike LoCoMo, MSC does not come with pre-annotated QA pairs; each
+speaker is instead seeded with a set of persona sentences at the start of each session. We filter
+persona sentences for concreteness (e.g.,“I have worked as a nurse for 10 years” vs. “I enjoy
+being outdoors”), keeping only those with a verifiable concrete detail (name, number, place, or
+occupation), and select up to N=5 persona facts per conversation. For each fact, we generate
+a corrupted version by changing exactly one concrete detail to a plausible but incorrect
+alternative, using the same corruption prompts as LoCoMo-Contam. Both versions are then
+converted into natural conversational utterances, and QA pairs for downstream evaluation
+are generated directly from the original persona facts. The resulting benchmark contains 41
+probe pairs (up to 5 per conversation × 20 conversations; some conversations contain fewer
+than 5 concrete persona facts) at the same 50% contamination rate.
+Evaluation protocol.
+Identical to LoCoMo-Contam: the agent processes all session
+turns to populate memory, correct facts are pre-seeded, and each probe turn (correct and
+corrupted) is evaluated through the full gate pipeline. MSC-Contam differs from LoCoMo-
+Contam in that its sessions are shorter and more topically focused, and probe facts are
+persona-grounded rather than scattered across many conversational turns; this lets us test
+whether the gate can leverage persona memory established across multiple sessions.
+6. Experiments
+6.1 Experimental Setup
+All agents use Qwen2.5-32B-Instruct (bfloat16, served via vLLM (Kwon et al., 2023) on a
+single high-memory GPU sufficient for 32B-parameter serving) with sentence-transformer
+retrieval over a flat memory store; the memory writer extracts atomic facts in one pass per
+context chunk. MemContam evaluates the gate directly on gold candidate facts (bypassing
+the extraction step) to isolate admission accuracy; LoCoMo-Contam and MSC-Contam
+run the full agent pipeline. We compare two baselines: WriteAll (admits every fact) and
+Random (admits each fact with probability p=0.6, matched to ConsistencyGate’s empirical
+admission rate at τ=0.7 to isolate the contribution of correctness-based filtering from any
+reduction in memory size). ConsistencyGate uses our recommended configuration of fixed
+threshold τ=0.7 with K=5 samples and capacity C=500 (chosen larger than the maximum
+candidate count per trajectory so capacity does not bind in any reported run); the adaptive
+threshold schedule and the single-pass LogProb variant are evaluated separately in §6.5.
+Cross-model experiments on Llama-3.3-70B and Llama4-Scout-17B-16E use two high-memory
+GPUs in tensor-parallel mode.
+LLM use disclosure.
+The LLM plays three roles: verifier inside ConsistencyGate, memory
+writer (candidate extraction), and corpus/corruption generator for benchmark construction
+(§5); the verifier and writer use whichever backbone is under evaluation, while the generator
+uses Qwen2.5-32B-Instruct only.
+6.2 Main Results
+Table 1 shows our main results across all four benchmarks (MemContam over 3 seeds).
+8
+
+Table 1: Main results across four benchmarks; ConsistencyGate uses our recommended
+configuration (fixed τ=0.7, K=5).
+LoCoMo: clean, tests over-rejection.
+LoCoMo-
+Contam/MSC-Contam: real conversations with planted corruptions; ρ and Prec are
+the primary metrics (QA F1 is insensitive due to pre-seeding, see §5.2). MemContam:
+synthetic, controlled 50% contamination. ρ: contamination rate (%↓). Prec/Rec: admission
+precision/recall (↑). F1: downstream QA (↑). Rec of WriteAll is trivially 1.0. Bold: best
+per column.
+LoCoMo
+LoCoMo-Contam
+MSC-Contam
+MemContam
+Method
+QA F1↑
+ρ ↓
+Prec↑
+Rec↑
+QA F1↑
+ρ ↓
+Prec↑
+Rec↑
+QA F1↑
+ρ ↓
+Prec↑
+Rec↑
+QA F1↑
+WriteAll
+0.271
+50.0
+0.500
+1.00
+0.227
+50.0
+0.500
+1.00
+0.338
+50.0
+0.500
+1.00
+0.474
+Random
+0.227
+47.7
+0.523
+0.90
+0.206
+49.3
+0.507
+0.83
+0.357
+49.3
+0.507
+0.60
+0.443
+ConsistencyGate
+0.267
+34.1
+0.659
+0.58
+0.230
+36.7
+0.633
+0.93
+0.356
+1.2
+0.988
+1.00
+0.840
+MemContam.
+On the synthetic benchmark, ConsistencyGate reduces contamination
+from 50.0% to 1.2% (a 97.6% relative reduction) at 100% recall of correct facts, and lifts
+downstream QA F1 from 0.474 to 0.840. We read this number as a near-oracle upper bound
+rather than a deployment number: MemContam contexts are short, factually unambiguous,
+and the corruption strategies leave differences large enough that a same-family LLM verifier
+resolves them with very few samples (see §7). The Random baseline does not improve over
+WriteAll, ruling out the explanation that any selective admission helps.
+LoCoMo-Contam and MSC-Contam.
+On real long-term conversations with planted
+corruptions, ConsistencyGate reduces contamination from 50.0% to 34.1% on LoCoMo-
+Contam (precision 0.500→0.659) and to 36.7% on MSC-Contam (precision 0.500→0.633);
+QA F1 is nearly unchanged because pre-seeding correct facts makes downstream QA insensi-
+tive to gate decisions on probe turns (§5.2). Recall on LoCoMo-Contam is 0.58 (systematic
+across all four backbones, range 0.52–0.68; Section 6.3) versus 0.93 on MSC-Contam: per-
+sona facts are stated explicitly and self-contained, whereas LoCoMo facts are often implicit
+or distributed across many turns and the verifier prompt requires support to be explicit. The
+deployment-side trade-off is discussed in §7 and §8.
+LoCoMo (clean).
+On clean conversations ConsistencyGate reaches QA F1 = 0.267 versus
+0.271 for WriteAll (−1.5%); Random filtering at a comparable admission rate is substantially
+worse (F1 = 0.227), indicating that the gain on contaminated data comes from correctness-
+based filtering rather than from any reduction in memory size.
+6.3 Cross-Model Generalization
+Table 2 reports ConsistencyGate on three additional backbones. On MemContam all four
+models reduce contamination to single-digit percentages and lift QA F1 by 75–89% relative
+to WriteAll; on real conversations the reductions span 20% (Scout, MSC-Contam) to 62%
+(Gemma and Llama-3.3-70B, LoCoMo-Contam), with clean-LoCoMo regression within
+four points throughout. Llama-3.3-70B is the most reliable verifier (precision = 0.998 across
+every K∈{1, 3, 5, 10} and τ∈{0.3, 0.5, 0.7, 0.9}, plus the best precision/recall balance on
+LoCoMo-Contam at Prec = 0.810, Recall = 0.680); Llama4-Scout is the weakest, with its
+broader soft-score distribution admitting borderline facts at low thresholds (ρ=14.0% under
+9
+
+Table 2: Cross-model generalization of ConsistencyGate (K=5). Qwen2.5-32B and Llama-
+3.3-70B use fixed τ=0.7; Gemma-31B and Llama4-Scout report the adaptive schedule
+(τmin=0.4, τmax=0.8) used in their respective cross-model runs. ConsistencyGate QA F1 on
+MemContam is the mean over 3 seeds. ρ: contamination rate (%). Prec/Rec: admission
+precision/recall. Rec of WriteAll is trivially 1.0. Bold: best per model group.
+LoCoMo
+LoCoMo-Contam
+MSC-Contam
+MemContam
+Model
+Method
+QA F1↑
+ρ ↓
+Prec↑
+Rec↑
+QA F1↑
+ρ ↓
+Prec↑
+Rec↑
+QA F1↑
+ρ ↓
+Prec↑
+Rec↑
+QA F1↑
+Qwen2.5-32B
+WriteAll
+0.271
+50.0
+0.500
+1.00
+0.227
+50.0
+0.500
+1.00
+0.338
+50.0
+0.500
+1.00
+0.474
+ConsistencyGate
+0.267
+34.1
+0.659
+0.58
+0.230
+36.7
+0.633
+0.93
+0.356
+1.2
+0.988
+1.00
+0.840
+Gemma4-31B
+WriteAll
+0.265
+50.0
+0.500
+1.00
+0.307
+50.0
+0.500
+1.00
+0.398
+50.0
+0.500
+1.00
+0.471
+ConsistencyGate
+0.269
+18.9
+0.811
+0.60
+0.316
+26.9
+0.731
+0.93
+0.407
+3.4
+0.966
+1.00
+0.831
+Llama4-Scout-17B
+WriteAll
+0.239
+50.0
+0.500
+1.00
+0.194
+50.0
+0.500
+1.00
+0.441
+50.0
+0.500
+1.00
+0.448
+ConsistencyGate
+0.202
+29.7
+0.703
+0.52
+0.208
+40.0
+0.600
+0.95
+0.452
+14.0
+0.860
+1.00
+0.693
+Llama-3.3-70B
+WriteAll
+0.285
+50.0
+0.500
+1.00
+0.286
+50.0
+0.500
+1.00
+0.443
+50.0
+0.500
+1.00
+0.433
+ConsistencyGate
+0.265
+19.0
+0.810
+0.68
+0.263
+32.1
+0.679
+0.93
+0.448
+0.2
+0.998
+1.00
+0.819
+20
+40
+60
+80
+100
+Interaction Turns
+0.0
+0.2
+0.4
+Contamination Rate
+Contamination 
+ WriteAll
+Contamination 
+ Random
+Contamination 
+ ConsistencyGate
+QA F1 
+ WriteAll
+QA F1 
+ Random
+QA F1 
+ ConsistencyGate
+0.2
+0.4
+0.6
+0.8
+QA F1
+Figure 2: Contamination rate and QA F1 vs. interaction turns on MemContam (Qwen2.5-
+32B-Instruct). Under WriteAll, contamination stays at 50% throughout and QA F1 saturates
+at 0.45 as incorrect facts crowd out correct ones. ConsistencyGate reduces contamination
+steadily, falling below 3% by turn 90, and QA F1 rises to 0.88 as clean facts accumulate.
+the adaptive schedule used here, dropping to 0.30% at τ=0.7; Section 6.5). Verifier capability
+matters but is not a binary requirement: every backbone we tested reduces contamination,
+and the recommended setting closes most of the cross-model gap.
+6.4 Contamination Cascade Effect
+Figure 2 traces contamination rate and QA F1 across 100 interaction turns on MemContam.
+Under WriteAll, contamination stays at 50% and QA F1 saturates at 0.45 as incorrect
+facts crowd out correct ones in retrieval.
+Under ConsistencyGate, contamination falls
+below 3% by turn 90 and QA F1 climbs to 0.88; the gap between the two methods widens
+monotonically with trajectory length. MemContam’s controlled setting makes this trajectory-
+level measurement possible; replicating it on real conversations requires turn-level fact labels
+that current corpora do not provide at scale.
+6.5 Ablation Studies
+Increasing K produces only marginal precision gains (1–2 points on Qwen and Gemma
+between K=1 and K=10, essentially flat on Scout and Llama-3.3-70B), so we recommend
+10
+
+Table 3: Ablation summary on MemContam: key variants per model. Full results (K ∈
+{1, 3, 5, 10}, all τ values) in Table 4. Bold: best per model group.
+Variant
+Adm Prec
+ContamRate
+QA F1
+Lat (ms)
+Qwen2.5-32B-Instruct
+ConsistencyGate (K = 5, default)
+0.941
+5.93%
+0.803
+341.9
+Fixed τ = 0.7
+0.988
+1.19%
+0.842
+341.6
+LogProb
+1.000
+0.00%
+0.824
+27.5
+Gemma4-31B-IT
+ConsistencyGate (K = 5, default)
+0.966
+3.38%
+0.833
+339.6
+Fixed τ = 0.7
+0.984
+1.57%
+0.847
+339.7
+LogProb
+0.984
+1.57%
+0.847
+24.3
+Llama4-Scout-17B-16E
+ConsistencyGate (K = 5, default)
+0.861
+13.9%
+0.716
+264.6
+Fixed τ = 0.7
+0.997
+0.30%
+0.783
+260.3
+LogProb
+0.999
+0.10%
+0.784
+23.1
+Llama-3.3-70B-Instruct
+ConsistencyGate (K = 5, default)
+0.998
+0.20%
+0.818
+363.4
+Fixed τ = 0.7
+0.998
+0.20%
+0.814
+363.0
+LogProb
+1.000
+0.00%
+0.819
+25.7
+K=5 as a conservative default (≤365 ms per fact) and K=1 for latency-critical settings.
+Raising τ from 0.3 to 0.7 sharply improves precision on the three more sensitive backbones
+(Qwen 0.931→0.988, Gemma 0.966→0.984, Scout 0.860→0.997), and τ=0.9 matches τ=0.7
+within noise, identifying τ=0.7 as the natural decision boundary; the adaptive schedule
+(τmin=0.4, τmax=0.8) is a no-tuning fallback that trades roughly five contamination points for
+one fewer hyperparameter (Qwen: 5.93% vs. 1.19%). Recommended configuration: fixed
+τ=0.7, K=5. The LogProb variant reaches near-perfect precision on MemContam (1.000,
+0.984, 0.999, 1.000 across the four backbones) at 23–28 ms per fact, a 12−14× speedup over
+K=5, but this advantage is specific to structured synthetic contexts; on LoCoMo-Contam
+soft scoring outperforms LogProb on every backbone (Section 7), so we recommend LogProb
+only for clean structured source data such as document or tool outputs.
+7. Failure Modes and Operating Regime
+Operating regime.
+ConsistencyGate struggles in two situations. When a candidate fact
+requires world knowledge beyond what the source context provides, the LLM verifier may
+consistently vote “yes” for plausible-but-wrong claims (Min et al., 2023); this is the structural
+limitation that consistency is a proxy for correctness, not correctness itself (§8). When
+relevant evidence is distributed across many prior conversation turns rather than localized in
+a single retrievable chunk, the verifier cannot ground its judgment and recall drops (Recall
+= 0.58 on LoCoMo-Contam versus 1.00 on MemContam, §6). The gain is largest in
+the opposite regime: long trajectories where the cascade has room to compound (Figure 2),
+and high-recall low-precision writers that leave aggressive extraction for the gate to filter.
+11
+
+ConsistencyGate is therefore best suited for document-grounded or tool-grounded memory
+writes rather than for emergent multi-turn conversational memory.
+Context structure moderates LogProb effectiveness.
+The single-pass LogProb variant
+beats soft scoring on MemContam but loses on LoCoMo-Contam on every backbone
+we tested (Table 5 in Section B). This realizes the bimodality asymmetry of §4.2: short
+structured contexts saturate the yes/no logits so a single forward pass suffices, while long
+conversational contexts have continuous score distributions that only K-sample averaging
+recovers. Use LogProb on clean structured source data (document chunks, tool outputs,
+knowledge-base entries) and soft scoring on open-ended dialogue.
+8. Conclusion
+We introduced ConsistencyGate, a write-time self-consistency gate that prevents hallucinated
+facts from entering LLM agent memory. The gate reduces contamination across two real-
+conversation benchmarks (LoCoMo-Contam, MSC-Contam) and approaches a near-
+oracle upper bound on a structured synthetic corpus (MemContam), with no fine-tuning;
+contamination reductions on real data span 20%–62% across four LLM backbones, with verifier
+capability emerging as the dominant factor in this spread. The accompanying analysis isolates
+the contamination cascade: write-time errors compound across long trajectories, so admission
+decisions made early shape memory quality much later in the interaction. Correctness-based
+admission is therefore a necessary complement to existing memory management, which
+has so far focused on utility and capacity. We release code, the benchmarks, and the gate
+implementation.
+Limitations
+ConsistencyGate requires LLM access at write time and adds O(K) cost per fact (the
+LogProb variant uses one forward pass at 23–28 ms, but only on short structured contexts).
+Consistency is a proxy for correctness, so ConsistencyGate cannot substitute for authoritative
+fact-checking. The main deployment risk is implicit-fact recall: the gate rejects 42% of
+correct probe facts on LoCoMo-Contam (Recall = 0.58, similar across all four backbones),
+a cost pre-seeding masks here but that is permanent operationally (see §7 for the operating
+regime in which the gate is applicable).
+12
+
+References
+Akari Asai, Zeqiu Wu, Yizhong Wang, Avirup Sil, and Hannaneh Hajishirzi. Self-RAG:
+Learning to retrieve, generate, and critique through self-reflection. In The Twelfth Inter-
+national Conference on Learning Representations, 2024. URL https://arxiv.org/abs/
+2310.11511.
+Yejin Bang, Samuel Cahyawijaya, Nayeon Lee, Wenliang Dai, Dan Su, Bryan Wilie, Holy
+Lovenia, Ziwei Ji, Tiezheng Yu, Willy Chung, Quyet V. Do, Yan Xu, and Pascale Fung. A
+multitask, multilingual, multimodal evaluation of ChatGPT on reasoning, hallucination,
+and interactivity. In Proceedings of the 13th International Joint Conference on Natural
+Language Processing and the 3rd Conference of the Asia-Pacific Chapter of the Association
+for Computational Linguistics, volume 1, pages 675–718. Association for Computational
+Linguistics, 2023.
+Shehzaad Dhuliawala, Mojtaba Komeili, Jing Xu, Roberta Raileanu, Xian Li, Asli Celikyilmaz,
+and Jason Weston. Chain-of-verification reduces hallucination in large language models.
+arXiv preprint arXiv:2309.11495, 2023.
+Luyu Gao, Zhuyun Dai, Panupong Pasupat, Anthony Chen, Arun Tejasvi Chaganty, Yicheng
+Fan, Vincent Y. Zhao, Ni Lao, Hongrae Lee, Da-Cheng Juan, and Kelvin Guu. RARR:
+Researching and revising what language models say, using language models. In Proceedings
+of the 61st Annual Meeting of the Association for Computational Linguistics, 2023. URL
+https://arxiv.org/abs/2210.08726.
+Yunfan Gao, Yun Xiong, Xinyu Gao, Kangxiang Jia, Jinliu Pan, Yuxi Bi, Yi Dai, Jiawei
+Sun, Meng Wang, and Haofen Wang. Retrieval-augmented generation for large language
+models: A survey. arXiv preprint arXiv:2312.10997, 2024.
+Chenxu Hu, Jie Fu, Chenzhuang Du, Simian Luo, Junbo Zhao, and Hang Zhao. ChatDB: Aug-
+menting LLMs with databases as their symbolic memory. arXiv preprint arXiv:2306.03901,
+2023.
+Ziwei Ji, Nayeon Lee, Rita Frieske, Tiezheng Yu, Dan Su, Yan Xu, Etsuko Ishii, Ye Jin
+Bang, Andrea Madotto, and Pascale Fung. Survey of hallucination in natural language
+generation. ACM Computing Surveys, 55(12):1–38, 2023.
+Saurav Kadavath, Tom Conerly, Amanda Askell, Tom Henighan, Dawn Drain, Ethan Perez,
+Nicholas Schiefer, Zac Hatfield-Dodds, Nova DasSarma, Eli Tran-Johnson, Scott Johnston,
+Sheer El-Showk, Andy Jones, Nelson Elhage, Tristan Hume, Anna Chen, Yuntao Bai,
+Sam Bowman, Stanislav Fort, Deep Ganguli, Danny Hernandez, Josh Jacobson, Jackson
+Kernion, Shauna Kravec, Liane Lovitt, Kamal Ndousse, Catherine Olsson, Sam Ringer,
+Dario Amodei, Tom Brown, Jack Clark, Nicholas Joseph, Ben Mann, Sam McCandlish,
+Chris Olah, and Jared Kaplan. Language models (mostly) know what they know. arXiv
+preprint arXiv:2207.05221, 2022.
+Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin Zheng, Cody Hao Yu,
+Joseph Gonzalez, Hao Zhang, and Ion Stoica. Efficient memory management for large
+13
+
+language model serving with PagedAttention. In Proceedings of the 29th Symposium on
+Operating Systems Principles, pages 611–626. Association for Computing Machinery, 2023.
+Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman
+Goyal, Heinrich Küttler, Mike Lewis, Wen-tau Yih, Tim Rocktäschel, Sebastian Riedel,
+and Douwe Kiela. Retrieval-augmented generation for knowledge-intensive NLP tasks. In
+Advances in Neural Information Processing Systems, volume 33, pages 9459–9474. Curran
+Associates, Inc., 2020.
+Aman Madaan, Niket Tandon, Prakhar Gupta, Skyler Hallinan, Luyu Gao, Sarah Wiegreffe,
+Uri Alon, Nouha Dziri, Shrimai Prabhumoye, Yiming Yang, Shashank Gupta, Bod-
+hisattwa Prasad Majumder, Katherine Hermann, Sean Welleck, Amir Yazdanbakhsh, and
+Peter Clark. Self-Refine: Iterative refinement with self-feedback. In Advances in Neural
+Information Processing Systems, 2023. URL https://arxiv.org/abs/2303.17651.
+Adyasha Maharana, Dong-Ho Lee, Sergey Tulyakov, Mohit Bansal, Francesco Barbieri,
+and Yuwei Fang. Evaluating very long-term conversational memory of LLM agents. In
+Proceedings of the 62nd Annual Meeting of the Association for Computational Linguistics,
+volume 1, pages 13851–13870, 2024.
+Potsawee Manakul, Adian Liusie, and Mark Gales. SelfcheckGPT: Zero-resource black-box
+hallucination detection for generative large language models. In The 2023 Conference
+on Empirical Methods in Natural Language Processing, 2023. URL https://openreview.
+net/forum?id=RwzFNbJ3Ez.
+Joshua Maynez, Shashi Narayan, Bernd Bohnet, and Ryan McDonald. On faithfulness and
+factuality in abstractive summarization. In Proceedings of the 58th Annual Meeting of the
+Association for Computational Linguistics, pages 1906–1919. Association for Computational
+Linguistics, 2020.
+Sewon Min, Kalpesh Krishna, Xinxi Lyu, Mike Lewis, Wen-tau Yih, Pang Koh, Mohit Iyyer,
+Luke Zettlemoyer, and Hannaneh Hajishirzi. FActScore: Fine-grained atomic evaluation
+of factual precision in long form text generation. In Proceedings of the 2023 Conference on
+Empirical Methods in Natural Language Processing, pages 12076–12100. Association for
+Computational Linguistics, 2023.
+Reiichiro Nakano, Jacob Hilton, Suchir Balaji, Jeff Wu, Long Ouyang, Christina Kim,
+Christopher Hesse, Shantanu Jain, Vineet Kosaraju, William Saunders, Xu Jiang, Karl
+Cobbe, Tyna Eloundou, Gretchen Krueger, Kevin Button, Matthew Knight, Benjamin
+Chess, and John Schulman. WebGPT: Browser-assisted question-answering with human
+feedback. arXiv preprint arXiv:2112.09332, 2022.
+Charles Packer, Sarah Wooders, Kevin Lin, Vivian Fang, Shishir G. Patil, Ion Stoica,
+and Joseph E. Gonzalez. Memgpt: Towards llms as operating systems. arXiv preprint
+arXiv:2310.08560, 2024.
+Joon Sung Park, Joseph O’Brien, Carrie Jun Cai, Meredith Ringel Morris, Percy Liang,
+and Michael S Bernstein. Generative agents: Interactive simulacra of human behavior.
+14
+
+In Proceedings of the 36th Annual ACM Symposium on User Interface Software and
+Technology. Association for Computing Machinery, 2023.
+Noah Shinn, Federico Cassano, Ashwin Gopinath, Karthik R Narasimhan, and Shunyu Yao.
+Reflexion: Language agents with verbal reinforcement learning. In Advances in Neural
+Information Processing Systems, volume 36, pages 8634–8652. Curran Associates, Inc.,
+2023.
+Guanzhi Wang, Yuqi Xie, Yunfan Jiang, Ajay Mandlekar, Chaowei Xiao, Yuke Zhu, Linxi Fan,
+and Anima Anandkumar. Voyager: An open-ended embodied agent with large language
+models. Transactions on Machine Learning Research, 2024.
+Xuezhi Wang, Jason Wei, Dale Schuurmans, Quoc V Le, Ed H. Chi, Sharan Narang,
+Aakanksha Chowdhery, and Denny Zhou. Self-consistency improves chain of thought
+reasoning in language models. In The Eleventh International Conference on Learning
+Representations, 2023. URL https://openreview.net/forum?id=1PL1NIMMrw.
+Lilian Weng. Llm powered autonomous agents. https://lilianweng.github.io/posts/
+2023-06-23-agent/, 2023.
+Jing Xu, Arthur Szlam, and Jason Weston. Beyond goldfish memory: Long-term open-
+domain conversation. In Proceedings of the 60th Annual Meeting of the Association for
+Computational Linguistics, volume 1, pages 5180–5197, 2022.
+Shi-Qi Yan, Jia-Chen Gu, Yun Zhu, and Zhen-Hua Ling. Corrective retrieval augmented
+generation. arXiv preprint arXiv:2401.15884, 2024.
+Guilin Zhang, Wei Jiang, Xiejiashan Wang, Aisha Behr, Kai Zhao, Jeffrey Friedman, Xu Chu,
+and Amine Anoun. Adaptive memory admission control for LLM agents. arXiv preprint
+arXiv:2603.04549, 2026.
+Wanjun Zhong, Lianghong Guo, Qiqi Gao, He Ye, and Yanlin Wang. MemoryBank: En-
+hancing large language models with long-term memory. arXiv preprint arXiv:2305.10250,
+2023.
+Wangchunshu Zhou, Yuchen Eleanor Jiang, Long Li, Jialong Wu, Tiannan Wang, Shi Qiu,
+Jintian Zhang, Jing Chen, Ruipu Wu, Shuai Wang, Shiding Zhu, Jiyu Chen, Wentao Zhang,
+Xiangru Tang, Ningyu Zhang, Huajun Chen, Peng Cui, and Mrinmaya Sachan. Agents: An
+open-source framework for autonomous language agents. arXiv preprint arXiv:2309.07870,
+2023.
+15
+
+Broader Impacts
+ConsistencyGate aims to make memory-augmented LLM agents more reliable by preventing
+hallucinated facts from accumulating in long-term memory stores. More reliable agent
+memory has broad positive applications: agents that assist with medical information retrieval,
+legal research, or financial planning benefit directly from reduced factual error propagation,
+and the gains are amplified in exactly the long-horizon settings where these applications
+operate.
+Because ConsistencyGate requires no fine-tuning and adds only a write-time
+check, it is accessible to practitioners deploying existing models without specialized training
+infrastructure.
+We also release three benchmarks (MemContam, LoCoMo-Contam,
+MSC-Contam) so that the community can measure and compare memory contamination
+methods.
+Practitioners should be aware of two deployment-level risks. First, passing a consistency
+check may create false assurance: end users may treat ConsistencyGate-filtered memory as
+factually verified when it has only been checked for self-consistency against a potentially
+unreliable source context. This risk is amplified in high-stakes domains (medical, legal,
+financial), where practitioners must communicate clearly that consistency filtering is not a
+substitute for authoritative fact-checking. Second, at deployment scale, K=5 calls per fact
+increases energy consumption; the LogProb variant (≈27 ms, single forward pass) substantially
+reduces this overhead for latency- or energy-constrained deployments. We do not foresee
+significant dual-use risks: write-time fact verification does not introduce new capabilities for
+generating or spreading misinformation.
+16
+
+Appendix A. Full Ablation Results
+Table 4 extends Table 3 in the main paper with the complete K ∈{1, 3, 5, 10} and τ ∈
+{0.3, 0.5, 0.7, 0.9, adaptive} sweeps for all four model backbones. Analysis and takeaways are
+in Section 6.5.
+17
+
+Table 4: Full ablation study on MemContam across all four backbones. K-ablation rows use
+Adaptive τ (no-tuning fallback); τ-ablation rows use K=5. Recommended configuration:
+fixed τ=0.7, K=5. Bold: best per section per model.
+Variant
+Adm Prec
+ContamRate
+QA F1
+Lat (ms)
+Qwen2.5-32B-Instruct
+ConsistencyGate (K = 1)
+0.931
+6.89%
+0.803
+74.9
+ConsistencyGate (K = 3)
+0.940
+6.02%
+0.807
+205.7
+ConsistencyGate (K = 5, default)
+0.941
+5.93%
+0.803
+341.9
+ConsistencyGate (K = 10)
+0.944
+5.57%
+0.814
+682.7
+Fixed τ = 0.3
+0.931
+6.89%
+0.801
+344.0
+Fixed τ = 0.5
+0.945
+5.48%
+0.809
+347.3
+Fixed τ = 0.7
+0.988
+1.19%
+0.842
+341.6
+Fixed τ = 0.9
+0.988
+1.19%
+0.842
+340.4
+Adaptive τ (default)
+0.941
+5.93%
+0.803
+341.9
+LogProb
+1.000
+0.00%
+0.824
+27.5
+Gemma4-31B-IT
+ConsistencyGate (K = 1)
+0.964
+3.57%
+0.833
+68.3
+ConsistencyGate (K = 3)
+0.965
+3.47%
+0.833
+203.8
+ConsistencyGate (K = 5, default)
+0.966
+3.38%
+0.833
+339.6
+ConsistencyGate (K = 10)
+0.964
+3.57%
+0.833
+679.0
+Fixed τ = 0.3
+0.966
+3.38%
+0.833
+339.7
+Fixed τ = 0.5
+0.966
+3.38%
+0.833
+339.7
+Fixed τ = 0.7
+0.984
+1.57%
+0.847
+339.7
+Fixed τ = 0.9
+0.984
+1.57%
+0.847
+339.7
+Adaptive τ (default)
+0.966
+3.38%
+0.833
+339.7
+LogProb
+0.984
+1.57%
+0.847
+24.3
+Llama4-Scout-17B-16E
+ConsistencyGate (K = 1)
+0.855
+14.5%
+0.717
+54.3
+ConsistencyGate (K = 3)
+0.859
+14.1%
+0.715
+157.1
+ConsistencyGate (K = 5, default)
+0.861
+13.9%
+0.716
+264.6
+ConsistencyGate (K = 10)
+0.860
+14.0%
+0.716
+525.2
+Fixed τ = 0.3
+0.857
+14.3%
+0.715
+259.1
+Fixed τ = 0.5
+0.860
+14.0%
+0.715
+259.3
+Fixed τ = 0.7
+0.997
+0.30%
+0.783
+260.3
+Fixed τ = 0.9
+0.999
+0.10%
+0.785
+259.6
+Adaptive τ (default)
+0.859
+14.1%
+0.718
+259.7
+LogProb
+0.999
+0.10%
+0.784
+23.1
+Llama-3.3-70B-Instruct
+ConsistencyGate (K = 1)
+0.998
+0.20%
+0.818
+73.4
+ConsistencyGate (K = 3)
+0.998
+0.20%
+0.818
+218.1
+ConsistencyGate (K = 5, default)
+0.998
+0.20%
+0.818
+363.4
+ConsistencyGate (K = 10)
+0.998
+0.20%
+0.818
+726.6
+Fixed τ = 0.3
+0.998
+0.20%
+0.818
+363.3
+Fixed τ = 0.5
+0.998
+0.20%
+0.818
+363.1
+Fixed τ = 0.7
+0.998
+0.20%
+0.814
+363.0
+Fixed τ = 0.9
+0.998
+0.20%
+0.814
+362.8
+Adaptive τ (default)
+0.998
+0.20%
+0.818
+362.7
+LogProb
+1.000
+0.00%
+0.819
+25.7
+18
+
+Appendix B. Soft Scoring vs. LogProb by Context Structure
+Table 5 reports the contamination-rate comparison referenced in §7.
+Table 5: Contamination rate ρ (%) of soft scoring (K=5, default) vs. LogProb on Mem-
+Contam (synthetic, structured) and LoCoMo-Contam (real conversations). Bold: lower
+contamination per dataset per model. LogProb dominates on MemContam; soft scoring
+dominates on LoCoMo-Contam.
+MemContam
+LoCoMo-Contam
+Model
+Soft K=5
+LogProb
+Soft K=5
+LogProb
+Qwen2.5-32B-Instruct
+5.93%
+0.00%
+34.1%
+40.0%
+Gemma4-31B-IT
+3.38%
+1.57%
+18.9%
+23.7%
+Llama4-Scout-17B-16E
+13.9%
+0.10%
+29.7%
+34.3%
+Llama-3.3-70B-Instruct
+0.20%
+0.00%
+19.0%
+19.4%
+Appendix C. Prompt Templates
+Benchmark generation prompt (used to construct MemContam).
+You are creating a benchmark for testing memory quality in AI
+agents.
+Given the following source context, generate:
+1.
+Five (5) CORRECT atomic facts that are explicitly stated in the
+context.
+2.
+Five (5) INCORRECT variants –- each based on a correct fact
+but subtly wrong
+(swap an entity, change a number, negate, or introduce a
+plausible confabulation).
+3.
+Three (3) question-answer pairs whose answers can be found in
+the correct facts.
+Return a JSON object with keys:
+"correct_facts",
+"incorrect_facts", "questions".
+Each question in "questions" is {"question":
+"...", "answer":
+"..."}.
+Source context:
+{context}
+JSON output:
+QA answering prompt (used to evaluate downstream QA F1).
+You are a helpful assistant with access to a memory store.
+Use the retrieved memories below to answer the question
+accurately.
+Respond with a short, direct answer (1–5 words).
+Do not write
+full sentences.
+19
+
+Retrieved memories:
+{memories}
+Question:
+{question}
+Answer (1–5 words):
+Fact conversion prompt (LoCoMo-Contam: QA pair →declarative fact).
+Given a question and its answer from a personal conversation,
+write a single, self-contained factual statement that captures
+the key information.
+The statement should read naturally, like a
+sentence from a diary or summary.
+Question:
+{question}
+Answer:
+{answer}
+Output only the fact statement, nothing else.
+Corruption prompt (LoCoMo-Contam and MSC-Contam: generate incorrect
+variant).
+Below is a factual statement extracted from a personal
+conversation.
+Your task:
+produce ONE corrupted version of this
+statement by changing exactly one concrete detail (a name, date,
+place, number, or activity) to something plausible but WRONG.
+Rules:
+- Keep the sentence structure identical.
+- Change only one detail.
+- The corrupted version must directly contradict the original.
+- Do NOT add hedging words like “allegedly” or “reportedly”.
+- Output only the corrupted statement, nothing else.
+Original:
+{fact}
+Corrupted:
+Conversational turn prompt (LoCoMo-Contam and MSC-Contam: fact →natural
+utterance).
+Convert the following fact into a short, natural first-person
+message that {speaker} might send in a chat conversation.
+The
+message should casually mention the fact as if referencing a
+shared memory.
+Keep it to 1–2 sentences.
+Output only the message,
+nothing else.
+Fact:
+{fact}
+Message:
+Memory extraction prompt.
+Extract atomic, self-contained facts from the following context.
+Each fact must be:
+- A single complete sentence
+- Directly stated in the context (no inferences)
+20
+
+- Specific enough to be verified independently
+Return ONLY a JSON array of strings.
+No explanation.
+Context:
+{context}
+Facts:
+Consistency verification prompt (soft scoring, default).
+You are a fact-checking assistant.
+Given a source context and a
+candidate fact, rate how strongly the fact is supported by the
+context.
+Source context:
+{context}
+Candidate fact:
+{fact}
+Question:
+How strongly is this candidate fact supported by the
+source context above?
+Do not use outside knowledge.
+0.0 = completely unsupported or directly contradicted by the
+context
+0.5 = partially supported or ambiguous
+1.0 = fully and directly supported by the context
+Output only a single decimal number between 0.0 and 1.0.
+Consistency verification prompt (binary, used for LogProb variant).
+You are a fact-checking assistant.
+Given a source context and
+a candidate fact, determine whether the fact is explicitly and
+directly supported by the context.
+Source context:
+{context}
+Candidate fact:
+{fact}
+Question:
+Is this candidate fact directly and explicitly
+supported by the source context above?
+Do not use outside
+knowledge.
+Answer with only "yes" or "no".
+Appendix D. Qualitative Examples
+Table 6 shows representative per-fact decisions made by ConsistencyGate on LoCoMo-
+Contam (Qwen2.5-32B-Instruct, K=5, soft scoring). Each row shows the extracted fact, the
+consistency score ˆp, the adaptive threshold τ ∗, the admission decision, and the ground-truth
+label.
+Analysis.
+True positives and true negatives show a clean separation: facts directly sup-
+ported by memory (e.g., “dancing feels magical”) receive score 1.0, while facts that contradict
+stored evidence (e.g., “painting” replacing “dancing”) receive score 0.0. False positives arise
+when the corrupted fact is consistent with but not identical to the correct fact in memory:
+21
+
+Table 6: Representative ConsistencyGate admission decisions on LoCoMo-Contam. ˆp:
+consistency score (0–1). τ ∗: adaptive threshold. ✓: correct decision; ✗: error.
+Extracted fact
+ˆp
+τ ∗
+Admitted
+Label
+Correct?
+True Positives: correct facts correctly admitted
+Gina said dancing feels magical.
+1.00
+0.80
+✓
+correct
+✓
+Gina stressed how important it is to make their
+customers feel like they want to come back.
+1.00
+0.80
+✓
+correct
+✓
+Gina went to a dance class on July 21st.
+1.00
+0.80
+✓
+correct
+✓
+True Negatives: corrupted facts correctly rejected
+Gina said painting feels like magic.
+0.00
+0.80
+✗
+corrupted
+✓
+Gina visited Jon’s old studio.
+0.00
+0.80
+✗
+corrupted
+✓
+Jon and Gina both escaped into painting last
+weekend.
+0.00
+0.80
+✗
+corrupted
+✓
+False Positives: corrupted facts incorrectly admitted
+Jon and Gina attended a dance class together.
+1.00
+0.80
+✓
+corrupted
+✗
+Melanie is into pottery.
+1.00
+0.80
+✓
+corrupted
+✗
+False Negatives: correct facts incorrectly rejected
+Calvin went to a car show with his dad.
+0.00
+0.80
+✗
+correct
+✗
+James mentioned a previous plan to meet up
+in Connecticut.
+0.00
+0.80
+✗
+correct
+✗
+“Jon and Gina attended a dance class together” is plausible given Gina’s dance class entry,
+even though the specific corruption was the date. Similarly, “Melanie is into pottery” is
+supported by memory that lists pottery among several of Melanie’s hobbies, so the gate
+admits it despite the label counting it as corrupted. False negatives occur when the correct
+fact is stated indirectly or requires multi-hop inference: “Calvin went to a car show” is correct
+but the memory stores a longer compound sentence about Dave’s engineering motivation, so
+the gate cannot directly verify the sub-claim and scores it 0.0. These failure modes motivate
+future work on multi-hop verification and fine-grained corruption detection.
+Appendix E. Benchmark Dataset Details
+E.1 MemContam
+Construction.
+MemContam contains 200 samples generated from five synthetic narrative
+contexts (personal biography, library record, recipe, science fair report, spacecraft mission log).
+Each context is repeated 200/5 = 40 times with independent LLM-generated fact/corruption
+sets, giving broad lexical variation despite sharing the same underlying entities. For each
+sample, Qwen2.5-32B-Instruct is prompted to produce: (i) five correct atomic facts explicitly
+stated in the context, (ii) five incorrect variants—each derived from a correct fact by
+entity substitution, number perturbation, negation insertion, or plausible confabulation, and
+(iii) three question-answer pairs answerable from the correct facts. The dataset thus contains
+1,000 correct facts, 1,000 incorrect facts, and 600 QA pairs. By construction, presenting all
+facts to a WriteAll agent yields exactly ρ = 50% contamination.
+22
+
+Corruption taxonomy.
+Incorrect facts are generated via four strategies applied in priority
+order: (1) Number perturbation: numeric tokens are shifted by a small random delta (e.g.,
+“34-year-old” →“35-year-old”); (2) Negation: the first copula is negated (“is” →“is not”);
+(3) Proper-noun substitution: a named entity is replaced with an anonymous placeholder
+(“MIT” →“Another”); (4) Contradicting clause: a “which is incorrect” suffix is appended as
+a fallback. This taxonomy is designed to produce corruptions that are semantically plausible
+but factually inconsistent with the source context, the minimal condition for stress-testing a
+consistency-based gate.
+Splits and evaluation.
+All 200 samples are used as a single evaluation pool; there is no
+train split. Experiments use three random seeds (42, 123, 456) that determine the order in
+which facts are presented to the memory agent. QA metrics (F1, EM) follow the SQuAD
+normalization: lowercased, punctuation-stripped token overlap.
+Source context templates.
+The five fixed contexts used to generate all 200 samples are
+reproduced verbatim below.
+1. Personal biography. “Alice Smith is a 34-year-old software engineer at TechCorp who
+graduated from MIT in 2012. She lives in Seattle with her husband David and their
+two children, Emma and Jack. Alice enjoys hiking on weekends and has climbed Mount
+Rainier twice. Her team at TechCorp is working on a new distributed database system
+called Pegasus.”
+2. Library record. “The Westbrook Community Library was founded in 1923 and holds over
+80,000 volumes. The current director, Margaret Chen, has been in the role since 2018.
+The library is open Monday through Saturday, 9am to 8pm, and Sunday 12pm to 5pm.
+Annual membership costs $25 for adults and $10 for students.”
+3. Recipe. “Recipe for Classic Tomato Basil Pasta: Boil 400g of spaghetti for 10 minutes. In
+a separate pan, sauté 4 cloves of garlic in olive oil for 2 minutes. Add 800g of crushed
+tomatoes and simmer for 15 minutes. Stir in 30 fresh basil leaves and season with salt
+and pepper. Serves 4 people. Total preparation time: 35 minutes.”
+4. Science fair report. “The 2024 Greenfield Science Fair awarded first place to Sarah Liu,
+age 15, for her project on photovoltaic efficiency improvements using perovskite coatings.
+Second place went to Marcus Johnson for his water purification device. The event was
+held at Lincoln High School on March 12, 2024, with 142 participants.”
+5. Spacecraft mission log. “The Orion-7 spacecraft launched on June 3, 2023, from Cape
+Canaveral. It carries a crew of three: Commander Elena Vasquez, Mission Specialist Dr.
+James Park, and Flight Engineer Priya Nair. The mission duration is planned for 180
+days. Orion-7 will conduct experiments on bone density loss in microgravity.”
+License.
+MemContam is released under CC BY 4.0. The synthetic contexts are entirely
+model-generated; no copyrighted source text is included.
+23
+
+E.2 LoCoMo-Contam
+Source data.
+LoCoMo-Contam is derived from LoCoMo-10 (Maharana et al., 2024), a
+set of 10 long-term dyadic conversations (400–700 turns each, 19–32 sessions per conversation).
+We use all 10 conversations without filtering.
+Probe construction.
+For each conversation, we select up to N=5 QA pairs from LoCoMo’s
+annotations, restricting to factual and temporal categories with concrete, verifiable answers.
+Each QA answer is converted to a self-contained declarative fact using Qwen2.5-32B-Instruct
+(e.g.,“Caroline moved from Sweden 4 years ago”). A corrupted variant is generated by
+prompting the model to change exactly one concrete detail (name, number, date, or place) to
+a plausible but incorrect alternative. Both the correct and corrupted facts are paraphrased
+into natural conversational utterances as if spoken by one of the conversation participants.
+The resulting benchmark has 50 probe pairs (5 per conversation) at 50% contamination.
+Evaluation protocol.
+The agent first processes the full conversation to populate memory.
+The correct probe facts are then pre-seeded directly into memory (bypassing the gate) to
+ensure retrieval evidence is always available. The gate is evaluated by presenting each probe
+turn through the full observe pipeline: the memory writer extracts a fact, the gate queries
+memory for supporting context, and an admission decision is recorded.
+License.
+LoCoMo is released under CC BY NC 4.0; our use is non-commercial research
+only.
+E.3 MSC-Contam
+Source data.
+MSC-Contam is derived from the Multi-Session Chat (MSC) dataset (Xu
+et al., 2022), comprising 20 dyadic conversations (2 sessions each), grounded in evolving
+speaker personas. We use all 20 conversations.
+Probe construction.
+MSC conversations do not provide pre-annotated QA pairs; instead,
+speakers are given persona sentences at session start.
+We filter persona sentences for
+concreteness, keeping only those with a verifiable concrete detail (name, number, place, or
+occupation), and select up to N=5 persona facts per conversation. Each fact is corrupted by
+changing exactly one concrete detail using the same prompts as LoCoMo-Contam, then
+paraphrased into a natural conversational utterance. QA pairs for downstream evaluation
+are generated directly from the original persona facts. The resulting benchmark has 41 probe
+pairs (up to 5 per conversation × 20 conversations; conversations with fewer than 5 concrete
+persona facts contribute fewer probes) at 50% contamination.
+Evaluation protocol.
+Same as LoCoMo-Contam: all session turns are processed to
+populate memory, correct facts are pre-seeded, and each probe is evaluated through the full
+gate pipeline.
+License.
+MSC is released under the MIT License.
+24

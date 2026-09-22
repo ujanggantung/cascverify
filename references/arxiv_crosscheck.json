@@ -1,0 +1,609 @@
+{
+  "queries": [
+    "tool hallucination",
+    "llm tool hallucination",
+    "agent hallucination detection",
+    "llm tool use verifier",
+    "agent memory contamination",
+    "prompt injection defense agent",
+    "mcp guard security",
+    "llm tool call verification",
+    "tool use benchmark llm"
+  ],
+  "github": [
+    {
+      "query": "tool hallucination",
+      "total": 624,
+      "items": [
+        {
+          "full_name": "exa-labs/exa-hallucination-detector",
+          "desc": "Hallucination Detector is a free and open-source tool that helps you verify the accuracy of your LLM generated content instantly.",
+          "stars": 332,
+          "url": "https://github.com/exa-labs/exa-hallucination-detector"
+        },
+        {
+          "full_name": "Infosys/Infosys-Responsible-AI-Toolkit",
+          "desc": "The Infosys Responsible AI toolkit incorporates various features including safety, security, explainability, fairness, bias and hallucinatio",
+          "stars": 310,
+          "url": "https://github.com/Infosys/Infosys-Responsible-AI-Toolkit"
+        },
+        {
+          "full_name": "linghungegeg/Linghun",
+          "desc": "AGI-oriented, hallucination-resistant AI coding runtime grounded in evidence, tools, memory, agents, and verification.",
+          "stars": 459,
+          "url": "https://github.com/linghungegeg/Linghun"
+        },
+        {
+          "full_name": "wsargent/groundedllm",
+          "desc": "AI agent grounded with search and extract tools to reduce hallucination.",
+          "stars": 83,
+          "url": "https://github.com/wsargent/groundedllm"
+        },
+        {
+          "full_name": "npstorey/civic-ai-tools",
+          "desc": "Open-source platform connecting AI assistants to government open data — MCP server, curated civic MCP directory, and anti-hallucination fram",
+          "stars": 41,
+          "url": "https://github.com/npstorey/civic-ai-tools"
+        },
+        {
+          "full_name": "frckeepit/llm-production-toolkit",
+          "desc": "Production-ready toolkit for evaluating, monitoring, and ensuring safety of LLM deployments. Hallucination detection, bias evaluation, feedb",
+          "stars": 94,
+          "url": "https://github.com/frckeepit/llm-production-toolkit"
+        },
+        {
+          "full_name": "stripe/stripe-salesforce-ai-context",
+          "desc": "Build Stripe-Salesforce automations faster with AI coding tools. AI-native context files that reduce the hallucinations",
+          "stars": 29,
+          "url": "https://github.com/stripe/stripe-salesforce-ai-context"
+        },
+        {
+          "full_name": "MigoXLab/dingo",
+          "desc": "Dingo: A Comprehensive AI Data, Model and Application Quality Evaluation Tool",
+          "stars": 756,
+          "url": "https://github.com/MigoXLab/dingo"
+        },
+        {
+          "full_name": "2akouwu/reverify",
+          "desc": "Stop your AI from making things up — it proposes, deterministic tools decide, every claim checked against ground truth with evidence. Ground",
+          "stars": 1235,
+          "url": "https://github.com/2akouwu/reverify"
+        },
+        {
+          "full_name": "aws-samples/sample-stop-ai-agent-hallucinations-workshop",
+          "desc": "6 hands-on demos to detect, prevent, and self-correct AI agent hallucinations using Graph-RAG, semantic tool selection, multi-agent validati",
+          "stars": 12,
+          "url": "https://github.com/aws-samples/sample-stop-ai-agent-hallucinations-workshop"
+        }
+      ]
+    },
+    {
+      "query": "llm tool hallucination",
+      "total": 278,
+      "items": [
+        {
+          "full_name": "exa-labs/exa-hallucination-detector",
+          "desc": "Hallucination Detector is a free and open-source tool that helps you verify the accuracy of your LLM generated content instantly.",
+          "stars": 332,
+          "url": "https://github.com/exa-labs/exa-hallucination-detector"
+        },
+        {
+          "full_name": "frckeepit/llm-production-toolkit",
+          "desc": "Production-ready toolkit for evaluating, monitoring, and ensuring safety of LLM deployments. Hallucination detection, bias evaluation, feedb",
+          "stars": 94,
+          "url": "https://github.com/frckeepit/llm-production-toolkit"
+        },
+        {
+          "full_name": "linghungegeg/Linghun",
+          "desc": "AGI-oriented, hallucination-resistant AI coding runtime grounded in evidence, tools, memory, agents, and verification.",
+          "stars": 459,
+          "url": "https://github.com/linghungegeg/Linghun"
+        },
+        {
+          "full_name": "wsargent/groundedllm",
+          "desc": "AI agent grounded with search and extract tools to reduce hallucination.",
+          "stars": 83,
+          "url": "https://github.com/wsargent/groundedllm"
+        },
+        {
+          "full_name": "npstorey/civic-ai-tools",
+          "desc": "Open-source platform connecting AI assistants to government open data — MCP server, curated civic MCP directory, and anti-hallucination fram",
+          "stars": 41,
+          "url": "https://github.com/npstorey/civic-ai-tools"
+        },
+        {
+          "full_name": "MigoXLab/dingo",
+          "desc": "Dingo: A Comprehensive AI Data, Model and Application Quality Evaluation Tool",
+          "stars": 756,
+          "url": "https://github.com/MigoXLab/dingo"
+        },
+        {
+          "full_name": "2akouwu/reverify",
+          "desc": "Stop your AI from making things up — it proposes, deterministic tools decide, every claim checked against ground truth with evidence. Ground",
+          "stars": 1235,
+          "url": "https://github.com/2akouwu/reverify"
+        },
+        {
+          "full_name": "drug-discovery-ai/deda-drug-evaluation-and-discovery-agent",
+          "desc": "An all-in-a-box Drug Discovery AI agent tool",
+          "stars": 17,
+          "url": "https://github.com/drug-discovery-ai/deda-drug-evaluation-and-discovery-agent"
+        },
+        {
+          "full_name": "Alqemist-labs/ruby_llm-tribunal",
+          "desc": "LLM evaluation framework for Ruby, powered by RubyLLM. Tribunal provides tools for evaluating and testing LLM outputs, detecting hallucinati",
+          "stars": 67,
+          "url": "https://github.com/Alqemist-labs/ruby_llm-tribunal"
+        },
+        {
+          "full_name": "abhishek-performdigital/Spiderbrain-V3",
+          "desc": "SpiderBrain v3 is a multi-platform skill/framework to reduce token usage and AI hallucinations across Claude, Cursor, and other AI tools.",
+          "stars": 65,
+          "url": "https://github.com/abhishek-performdigital/Spiderbrain-V3"
+        }
+      ]
+    },
+    {
+      "query": "agent hallucination detection",
+      "total": 226,
+      "items": [
+        {
+          "full_name": "sinewaveai/agent-security-scanner-mcp",
+          "desc": "Security scanner MCP server for AI coding agents. Prompt injection firewall, package hallucination detection (4.3M+ packages), 1000+ vulnera",
+          "stars": 122,
+          "url": "https://github.com/sinewaveai/agent-security-scanner-mcp"
+        },
+        {
+          "full_name": "Jiten20/playwright-agentic-quality-engineering-framework",
+          "desc": "AI-assisted Playwright MCP framework for test planning, generation, healing, GitHub traceability, CI/CD, and hallucination detection.",
+          "stars": 21,
+          "url": "https://github.com/Jiten20/playwright-agentic-quality-engineering-framework"
+        },
+        {
+          "full_name": "aaFrostnova/CiteTracer",
+          "desc": "CITETRACER: Cascading Multi-Agent for Citation Hallucination Detection",
+          "stars": 12,
+          "url": "https://github.com/aaFrostnova/CiteTracer"
+        },
+        {
+          "full_name": "Alpha-Park/genpark-agentic-hallucination-grounding-checker-skill",
+          "desc": "Sentence-level RAG factual grounding and hallucination detection engine",
+          "stars": 7,
+          "url": "https://github.com/Alpha-Park/genpark-agentic-hallucination-grounding-checker-skill"
+        },
+        {
+          "full_name": "alphaparkinc/genpark-agentic-hallucination-grounding-checker-skill",
+          "desc": "Sentence-level RAG factual grounding and hallucination detection engine",
+          "stars": 7,
+          "url": "https://github.com/alphaparkinc/genpark-agentic-hallucination-grounding-checker-skill"
+        },
+        {
+          "full_name": "ArkFelix7/agentlens",
+          "desc": "Chrome DevTools for AI Agents — real-time observability, hallucination detection, session replay, and cost tracking. MIT licensed.",
+          "stars": 6,
+          "url": "https://github.com/ArkFelix7/agentlens"
+        },
+        {
+          "full_name": "ApoorvMani/csc8208-multi-agent-hallucination",
+          "desc": "Multi-agent LLM hallucination detection and propagation dynamics — CSC8208 Group 5, Newcastle University MSc Cybersecurity 2025/2026",
+          "stars": 3,
+          "url": "https://github.com/ApoorvMani/csc8208-multi-agent-hallucination"
+        },
+        {
+          "full_name": "hakeematyab/Queryable-Shared-Reference-Repository",
+          "desc": "On-premise agentic RAG solution with hybrid retrieval and real-time hallucination detection. 85% hit rate, 93% hallucination mitigation prec",
+          "stars": 1,
+          "url": "https://github.com/hakeematyab/Queryable-Shared-Reference-Repository"
+        },
+        {
+          "full_name": "elizabethfuentes12/how-to-evaluate-ai-agents-sample-for-aws",
+          "desc": "Demos for AI agent evaluation: LLM-as-judge, trajectory analysis, hallucination detection, cost   benchmarks",
+          "stars": 4,
+          "url": "https://github.com/elizabethfuentes12/how-to-evaluate-ai-agents-sample-for-aws"
+        },
+        {
+          "full_name": "ghayathri-devi/AI-Response-Validation-System-with-Hallucination-Detection-Assistance",
+          "desc": "A multi-agent LLM evaluation system that scores AI-generated responses across relevance, accuracy, hallucination, and completeness using a R",
+          "stars": 3,
+          "url": "https://github.com/ghayathri-devi/AI-Response-Validation-System-with-Hallucination-Detection-Assistance"
+        }
+      ]
+    },
+    {
+      "query": "llm tool use verifier",
+      "total": 124,
+      "items": [
+        {
+          "full_name": "Yarok14Technologies/front-end-ASIC-design-Local-Device-LMM-tool-using-RAG",
+          "desc": "Automated Front-End VLSI Design tool. Uses an LLM-RAG pipeline to transform high-level design specifications into PPA-optimized, synthesizab",
+          "stars": 4,
+          "url": "https://github.com/Yarok14Technologies/front-end-ASIC-design-Local-Device-LMM-tool-using-RAG"
+        },
+        {
+          "full_name": "D-K-Deng/LLM-RevTool",
+          "desc": "An LLM-assisted reverse engineering pipeline that analyzes binaries, generates exploit attempts, verifies them automatically, and iterates t",
+          "stars": 4,
+          "url": "https://github.com/D-K-Deng/LLM-RevTool"
+        },
+        {
+          "full_name": "zkortam/wingman",
+          "desc": "Decision review and outcome verification for tool-using AI agents",
+          "stars": 4,
+          "url": "https://github.com/zkortam/wingman"
+        },
+        {
+          "full_name": "FlipForensics/AIFT",
+          "desc": "AIFT is a GUI, CLI, REST API, and MCP tool that helps DFIR analysts get oriented quickly. Point it at disk images, VM images, forensic archi",
+          "stars": 45,
+          "url": "https://github.com/FlipForensics/AIFT"
+        },
+        {
+          "full_name": "echohive42/how-accurate-are-LLM-facts",
+          "desc": "A sophisticated Python tool that generates interesting facts about any topic and automatically verifies them using dual AI systems. The tool",
+          "stars": 2,
+          "url": "https://github.com/echohive42/how-accurate-are-LLM-facts"
+        },
+        {
+          "full_name": "snehalogic/news-verifier",
+          "desc": "AI-powered news verification tool using multi-agent LLM orchestration",
+          "stars": 0,
+          "url": "https://github.com/snehalogic/news-verifier"
+        },
+        {
+          "full_name": "theshovonsaha/shovsOS",
+          "desc": "Shovs LLM OS is a local-first research runtime for studying agents that plan, use tools, remember, verify, and explain what happened.",
+          "stars": 5,
+          "url": "https://github.com/theshovonsaha/shovsOS"
+        },
+        {
+          "full_name": "Protogonos42/verified-tool-use-dataset",
+          "desc": "Verified multi-turn tool-use / function-calling trajectories for LLM agent builders — every call schema-validated, checkable before you buy.",
+          "stars": 0,
+          "url": "https://github.com/Protogonos42/verified-tool-use-dataset"
+        },
+        {
+          "full_name": "erfancode83/med-dose-verifier",
+          "desc": "CLI tool to verify prescribed medication doses using FDA data + LLM. Educational use for nursing students. Integrates with n8n and Telegram ",
+          "stars": 1,
+          "url": "https://github.com/erfancode83/med-dose-verifier"
+        },
+        {
+          "full_name": "itay99988/LLMon",
+          "desc": "LLMon is an interactive research tool that lets you:  📝Describe temporal requirements in plain English – and get runnable runtime-verificati",
+          "stars": 3,
+          "url": "https://github.com/itay99988/LLMon"
+        }
+      ]
+    },
+    {
+      "query": "agent memory contamination",
+      "total": 12,
+      "items": [
+        {
+          "full_name": "happyahluwalia/agent-memory-contamination",
+          "desc": "",
+          "stars": 0,
+          "url": "https://github.com/happyahluwalia/agent-memory-contamination"
+        },
+        {
+          "full_name": "ThankNIXlater/memory-guard",
+          "desc": "Agent memory integrity monitoring. Detect injection, tampering, drift, and cross-agent contamination in AI agent workspace files.",
+          "stars": 0,
+          "url": "https://github.com/ThankNIXlater/memory-guard"
+        },
+        {
+          "full_name": "CumulativeWebInc/cwi-memory-seal",
+          "desc": "CWI Memory Seal — the integrity primitive for agent memory: contamination scanning (12 heuristic rules) + Ed25519-sealed tamper-evident chec",
+          "stars": 0,
+          "url": "https://github.com/CumulativeWebInc/cwi-memory-seal"
+        },
+        {
+          "full_name": "Evilander/memorygym",
+          "desc": "A release gate for agent memory — replays structured scenarios against memory adapters, scores retrieval with contamination-aware metrics, a",
+          "stars": 0,
+          "url": "https://github.com/Evilander/memorygym"
+        },
+        {
+          "full_name": "DanceNitra/ramr",
+          "desc": "RAMR — Retrieval-Augmented Memory Reliability: a contamination-resistant synthetic benchmark for agentic-RAG / memory systems (findings + me",
+          "stars": 0,
+          "url": "https://github.com/DanceNitra/ramr"
+        },
+        {
+          "full_name": "HEEERE/Multi-Agent-Pollution-Defense-Strategy-Lab",
+          "desc": "A multi-agent security lab for detecting and mitigating prompt injection, RAG poisoning, tool abuse, and memory contamination.",
+          "stars": 0,
+          "url": "https://github.com/HEEERE/Multi-Agent-Pollution-Defense-Strategy-Lab"
+        },
+        {
+          "full_name": "SatAi999/MT-TARF-Multi-Tier-Transactional-Agentic-Resilience-Framework-",
+          "desc": "A transactional execution runtime for Agentic AI that prevents hallucinated memory contamination through atomic claim verification and datab",
+          "stars": 0,
+          "url": "https://github.com/SatAi999/MT-TARF-Multi-Tier-Transactional-Agentic-Resilience-Framework-"
+        },
+        {
+          "full_name": "RhondaMeloMsc/Agent_Tool_Abuse_RedTeam",
+          "desc": "Advanced adversarial red team assessment of autonomous AI agents focusing on tool privilege escalation, persistent memory contamination, and",
+          "stars": 0,
+          "url": "https://github.com/RhondaMeloMsc/Agent_Tool_Abuse_RedTeam"
+        },
+        {
+          "full_name": "yehuioc/dsh-memory-pack",
+          "desc": "File-based layered memory skill pack for DeepSeek Harness and skill-driven agent runtimes: 11-layer directory model, Maps-first navigation, ",
+          "stars": 1,
+          "url": "https://github.com/yehuioc/dsh-memory-pack"
+        },
+        {
+          "full_name": "kadubon/sovereign-epistemic-commons-poc",
+          "desc": "Lightweight, replayable PoC for Sovereign Epistemic Commons: synthetic multi-agent memory-governance experiments on contamination, typed lan",
+          "stars": 0,
+          "url": "https://github.com/kadubon/sovereign-epistemic-commons-poc"
+        }
+      ]
+    },
+    {
+      "query": "prompt injection defense agent",
+      "total": 406,
+      "items": [
+        {
+          "full_name": "lasso-security/claude-hooks",
+          "desc": "Lasso security integrations for Claude Code, including prompt-injection defenses",
+          "stars": 267,
+          "url": "https://github.com/lasso-security/claude-hooks"
+        },
+        {
+          "full_name": "seojoonkim/prompt-guard",
+          "desc": "Advanced prompt injection defense system for AI agents. Multi-language detection, severity scoring, and security auditing.",
+          "stars": 176,
+          "url": "https://github.com/seojoonkim/prompt-guard"
+        },
+        {
+          "full_name": "DaoyuanLi2816/RepoGuardBench",
+          "desc": "Benchmarking repository-borne prompt injection attacks and lightweight defenses for local coding agents. DL4C @ ICML 2026.",
+          "stars": 70,
+          "url": "https://github.com/DaoyuanLi2816/RepoGuardBench"
+        },
+        {
+          "full_name": "screem500/prompt-injection-auditor",
+          "desc": "Security audit skill for LLM agents - prompt injection scanner, attack catalog & defense checklist",
+          "stars": 16,
+          "url": "https://github.com/screem500/prompt-injection-auditor"
+        },
+        {
+          "full_name": "zscole/bagman-skill",
+          "desc": "Secure key management patterns for AI agents - storage, session keys, leak prevention, prompt injection defense",
+          "stars": 18,
+          "url": "https://github.com/zscole/bagman-skill"
+        },
+        {
+          "full_name": "SleuthCo/clawshield-public",
+          "desc": "Security proxy for AI agents. Scans every message for prompt injection, PII, and secrets. Defense-in-depth: Go proxy + iptables firewall + e",
+          "stars": 130,
+          "url": "https://github.com/SleuthCo/clawshield-public"
+        },
+        {
+          "full_name": "bridge-mind/BridgeWard",
+          "desc": "Trust nothing. Ship safely. — Skeptical-reading and prompt-injection defense skill for AI agents. Provenance tagging, red-flag patterns, ref",
+          "stars": 40,
+          "url": "https://github.com/bridge-mind/BridgeWard"
+        },
+        {
+          "full_name": "kaijiezhu11/MELON",
+          "desc": "[ICML'25] MELON: Provable Defense Against Indirect Prompt Injection Attacks in AI Agents",
+          "stars": 39,
+          "url": "https://github.com/kaijiezhu11/MELON"
+        },
+        {
+          "full_name": "Alibaba-AAIG/ClawArmor",
+          "desc": "Self-Evolving Defense for AI Agents — Protect against prompt injection, data exfiltration, and multi-stage attacks with adaptive security.",
+          "stars": 20,
+          "url": "https://github.com/Alibaba-AAIG/ClawArmor"
+        },
+        {
+          "full_name": "Greysahy/ipiguard",
+          "desc": "[EMNLP 2025 Oral] IPIGuard: A Novel Tool Dependency Graph-Based Defense Against Indirect Prompt Injection in LLM Agents",
+          "stars": 23,
+          "url": "https://github.com/Greysahy/ipiguard"
+        }
+      ]
+    },
+    {
+      "query": "mcp guard security",
+      "total": 294,
+      "items": [
+        {
+          "full_name": "Tencent/AI-Infra-Guard",
+          "desc": "A full-stack AI Red Teaming platform securing AI ecosystems via Agent Scan, Skills Scan, MCP scan, AI Infra scan and LLM jailbreak evaluatio",
+          "stars": 6510,
+          "url": "https://github.com/Tencent/AI-Infra-Guard"
+        },
+        {
+          "full_name": "hashgraph-online/hol-guard",
+          "desc": "Open-source antivirus for AI agents: block risky tools, secret access, prompt injection, malicious packages, MCP servers, plugins, and skill",
+          "stars": 638,
+          "url": "https://github.com/hashgraph-online/hol-guard"
+        },
+        {
+          "full_name": "abluva/mcp-trust-plane",
+          "desc": "Composable data security plane for Model Context Protocol. Pluggable layers — collect, analyze, guard — across 50+ enterprise providers. Ope",
+          "stars": 100,
+          "url": "https://github.com/abluva/mcp-trust-plane"
+        },
+        {
+          "full_name": "mythos-agent/mythos-agent",
+          "desc": "The AI security agent guards your code.",
+          "stars": 43,
+          "url": "https://github.com/mythos-agent/mythos-agent"
+        },
+        {
+          "full_name": "OWASP/www-project-agent-memory-guard",
+          "desc": "OWASP Foundation web repository",
+          "stars": 180,
+          "url": "https://github.com/OWASP/www-project-agent-memory-guard"
+        },
+        {
+          "full_name": "DobermanCore/Doberman-Core",
+          "desc": "Your AI's guard dog. Doberman sits at runtime, gating every input, output and tool call to stop unsafe or unintended actions before they exe",
+          "stars": 278,
+          "url": "https://github.com/DobermanCore/Doberman-Core"
+        },
+        {
+          "full_name": "Donnyb369/mcp-spine",
+          "desc": "Context Minifier & State Guard — Local-first MCP middleware proxy",
+          "stars": 11,
+          "url": "https://github.com/Donnyb369/mcp-spine"
+        },
+        {
+          "full_name": "2pidata/openclaw-security-guard",
+          "desc": "Complete security layer for OpenClaw - CLI Scanner + Live Dashboard. Secrets detection, config hardening, prompt injection scanning, MCP ser",
+          "stars": 16,
+          "url": "https://github.com/2pidata/openclaw-security-guard"
+        },
+        {
+          "full_name": "SaravanaGuhan/mcp-guard",
+          "desc": "Security scanner for MCP servers. Every finding carries its evidence, including the server's actual response bytes.",
+          "stars": 12,
+          "url": "https://github.com/SaravanaGuhan/mcp-guard"
+        },
+        {
+          "full_name": "zmbcen/APK-Security-Guard-MCP-Suite",
+          "desc": "",
+          "stars": 0,
+          "url": "https://github.com/zmbcen/APK-Security-Guard-MCP-Suite"
+        }
+      ]
+    },
+    {
+      "query": "llm tool call verification",
+      "total": 55,
+      "items": [
+        {
+          "full_name": "QWED-AI/qwed-verification",
+          "desc": "Open-source AI verification infrastructure for deterministic verification of LLM outputs, tool calls, code, schemas, and agent state before ",
+          "stars": 59,
+          "url": "https://github.com/QWED-AI/qwed-verification"
+        },
+        {
+          "full_name": "pic-standard/pic-standard",
+          "desc": "Open standard for Provenance & Intent Contracts (PIC) in AI agents. Verify intent, provenance, and evidence before high-impact tool calls.",
+          "stars": 31,
+          "url": "https://github.com/pic-standard/pic-standard"
+        },
+        {
+          "full_name": "tylerjrbuell/reactive-agents-ts",
+          "desc": "The transparent, composable harness for TypeScript agents. The same code runs the full agent loop on a local 4B model or a frontier API, wit",
+          "stars": 28,
+          "url": "https://github.com/tylerjrbuell/reactive-agents-ts"
+        },
+        {
+          "full_name": "CodewithJha/mutiny",
+          "desc": "Behavioral fuzz-testing engine for AI agents — policy violations, tool-call verification, regression tests. Adapter #1: OpenAI Agents SDK.",
+          "stars": 2,
+          "url": "https://github.com/CodewithJha/mutiny"
+        },
+        {
+          "full_name": "llmsresearch/AVA",
+          "desc": "Anytime Verified Agents (AVA) is a framework for building reliable LLM-based reasoning systems that adaptively allocate computational resour",
+          "stars": 3,
+          "url": "https://github.com/llmsresearch/AVA"
+        },
+        {
+          "full_name": "fagao-ai/tellme",
+          "desc": " CLI tool to verify OpenAI-compatible model deployments — check tool-call and  reasoning support ",
+          "stars": 2,
+          "url": "https://github.com/fagao-ai/tellme"
+        },
+        {
+          "full_name": "AstralXVoid/NoWreck",
+          "desc": " A CLI tool that verifies AI coding assistant claims against actual structural changes — catching hallucinated functions, fake calls, and mi",
+          "stars": 10,
+          "url": "https://github.com/AstralXVoid/NoWreck"
+        },
+        {
+          "full_name": "xuyanqiu112/agent-verification-layer",
+          "desc": "A pluggable verification layer for LLM agent tool calls (Biomni-based)",
+          "stars": 0,
+          "url": "https://github.com/xuyanqiu112/agent-verification-layer"
+        },
+        {
+          "full_name": "heilgar/pest",
+          "desc": "Prompt Evaluation & Scoring Toolkit. A lightweight, config-driven TypeScript library for testing LLM prompts, comparing models, verifying to",
+          "stars": 4,
+          "url": "https://github.com/heilgar/pest"
+        },
+        {
+          "full_name": "PunithaBI/Tool-calling-structured-output",
+          "desc": "(Tool Calling + Structured Outputs) project: a mock LLM interprets customer complaints and routes them across 9 business tools (intake, purc",
+          "stars": 0,
+          "url": "https://github.com/PunithaBI/Tool-calling-structured-output"
+        }
+      ]
+    },
+    {
+      "query": "tool use benchmark llm",
+      "total": 231,
+      "items": [
+        {
+          "full_name": "Accenture/mcp-bench",
+          "desc": "MCP-Bench: Benchmarking Tool-Using LLM Agents with Complex Real-World Tasks via MCP Servers",
+          "stars": 508,
+          "url": "https://github.com/Accenture/mcp-bench"
+        },
+        {
+          "full_name": "ivanfioravanti/llm_context_benchmarks",
+          "desc": "  📊 LLM Context Benchmarks - A comprehensive benchmarking tool for testing LLMs with varying context sizes using Ollama. Features dual bench",
+          "stars": 97,
+          "url": "https://github.com/ivanfioravanti/llm_context_benchmarks"
+        },
+        {
+          "full_name": "yupeijei1997/WildToolBench",
+          "desc": "(ICLR 2026)Benchmarking LLM Tool-Use in the Wild",
+          "stars": 42,
+          "url": "https://github.com/yupeijei1997/WildToolBench"
+        },
+        {
+          "full_name": "arc53/llm-price-compass",
+          "desc": "This project collects GPU benchmarks from various cloud providers and compares them to fixed per token costs. Use our tool for efficient LLM",
+          "stars": 223,
+          "url": "https://github.com/arc53/llm-price-compass"
+        },
+        {
+          "full_name": "coder543/llm-speed-benchmark",
+          "desc": "A tool that can be used to measure the sequential performance of any OpenAI-compatible LLM API",
+          "stars": 25,
+          "url": "https://github.com/coder543/llm-speed-benchmark"
+        },
+        {
+          "full_name": "InternScience/ResearchHarness",
+          "desc": "A lightweight, general-purpose harness for tool-using LLM agents, fair benchmark evaluation, harness baselines, and personal assistant workf",
+          "stars": 48,
+          "url": "https://github.com/InternScience/ResearchHarness"
+        },
+        {
+          "full_name": "CMarsRover/SciAgentGYM",
+          "desc": "Code for Paper: Benchmarking Multi-step Scientific Tool-use in LLM Agents",
+          "stars": 47,
+          "url": "https://github.com/CMarsRover/SciAgentGYM"
+        },
+        {
+          "full_name": "Toloka/tolokaforge",
+          "desc": "Universal LLM benchmarking harness for tool use, browser, mobile, coding, and long-horizon evals",
+          "stars": 17,
+          "url": "https://github.com/Toloka/tolokaforge"
+        },
+        {
+          "full_name": "cdxeve/awesome-computer-use-agents",
+          "desc": "A curated list of papers, tools, and benchmarks on LLM-based computer-use agents, covering both terminal/CLI and GUI approaches.",
+          "stars": 18,
+          "url": "https://github.com/cdxeve/awesome-computer-use-agents"
+        },
+        {
+          "full_name": "Solirinai/GeoBenchX",
+          "desc": "LLM-agents benchmark set of geospatial tasks requiring multi-step tool use; and LLM-as-Judge based evaluation framework.",
+          "stars": 31,
+          "url": "https://github.com/Solirinai/GeoBenchX"
+        }
+      ]
+    }
+  ]
+}

@@ -98,7 +98,14 @@ TOI, FR, MCI, CD, CB, RR — definitions in `EXPERIMENT_DESIGN.md` §5 and `casc
 - Seeds: [1,2,3] · Tasks: [N] · Failure configs: [matched]
 
 ### 5.2 Main results
-[TABLE: model × tier → FR, MCI, avgCD, maxCD, RR]
+[TABLE: model × tier → FR, MCI, avgCD, maxCD, RR — to be filled after full run completes]
+
+#### Interim observations (n=4 runs; full benchmark in progress)
+All three tiers completed so far show FR=0%: the served model(s) consistently chose honest
+failure handling over fabrication when tool errors were explicit. Notably, persistent
+injected failure (P5 tier, n=1, 44 calls) also produced FR=0%: the agent reported
+"...the database tool is non-functional" rather than fabricating missing data. Two
+non-...[truncated]
 
 ### 5.3 Cascade patterns
 [FIGURE: pattern distribution per tier]
