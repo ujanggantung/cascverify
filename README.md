@@ -49,6 +49,10 @@ this: one tool fails on EVERY call for the entire task.
 ## Methodology
 
 - Model served per request recorded via `response.model` → post-stratification possible
-- Classifier validated: 5/5 unit tests pass (synthetic traces, known ground truth)
+- Classifier validated: 9/9 unit tests pass (synthetic traces, known ground truth)
 - Pressure condition via `--pressure` flag (Sethi 2026 prompt-level treatment)
 - Persistent failure via `persistent: true` in failure_plan (env support)
+- Two verifier axes: **FR** (output-side, fabricated tool results) and **IFR**
+  (input-side, hallucinated tool parameters via `check_input_grounding`)
+- RQ2 cross-session handoff: `run_memory_cascade.py` (Session A broken env → report →
+  Session B fresh agent, healthy env, verify-first prompt)

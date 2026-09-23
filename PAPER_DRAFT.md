@@ -278,7 +278,45 @@ at all — consistent with the interpretation that what these models resist is i
 results, not inventing premises.
 
 ## 8. Conclusion
-[To be written from results.]
+
+Tool-augmented LLM agents are trusted with long-horizon autonomy precisely because their
+tool calls *look* inspectable — but inspection has been output-side: did the agent claim
+data its tools never returned? On that axis, the free-tier model population we measured
+(n=54 runs, 915 calls, 247 injected failures, 5 served models) is remarkably clean:
+FR=0.00%, 100% honest handling, all cascades contained. Pressure (Sethi-style "you MUST
+give a number") changed report style — more derived numbers, more confidence — but not
+integrity: 22/22 matched pairs still zero fabricated outputs.
+
+That clean bill of health is only half the story. Two findings reframe where hallucination
+actually lives:
+
+1. **Fabrication is input-side, not output-side.** A parameter-grounding check finds 5.6%
+   of runs (3/54; 9.1% under pressure vs 3.1% without) injecting numbers into tool
+   arguments that exist nowhere in the environment or instruction — e.g. an invented
+   uptime parameter set (720/5.2/3.4) laundered through a genuine calculator call.
+   Output-integrity verifiers, including those in prior benchmarks, structurally cannot
+   see this class: every tool call individually returns `ok`.
+
+2. **Invented premises survive verified handoffs.** In the two-session RQ2 protocol, a
+   parameter-level hallucination from a failing Session A propagated intact through a
+   Session B that was explicitly told to verify, made 27 healthy tool calls, re-ran the
+   same invented expression, and published the result as "CONFIRMED". A single false
+   premise, one real tool call, and the memory cascade is complete.
+
+The practical implication for the verifier designs now shipping into agent frameworks:
+grounding must cover **inputs** (arguments) as well as **outputs** (results), and
+handoff/memory must carry provenance, not just claims. The contributions are the
+benchmark (CascToolBench, 32 tasks × 5 tiers, reproducible), the two-axis verifier
+(output FR + input IFR), and the two-session handoff protocol that operationalizes
+"memory cascade" as a measurable cross-session propagation — open-sourced at
+https://github.com/ujanggantung/cascverify.
+
+**Limitations.** Free-tier combo models only; one seed per task; n=22 matched pairs and
+n=3 handoff pairs — the cascade (1/3) is a demonstrated mechanism, not a rate. The final
+answers under pressure are judged by heuristic + judge approximation without symbolic
+arithmetic equivalence (F8). A higher-capability positive-arm model remains future work
+to confirm the instrument's in-the-wild sensitivity (synthetic positive control already
+passes).
 
 ---
 
