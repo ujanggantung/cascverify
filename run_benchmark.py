@@ -149,7 +149,8 @@ def main():
                 # (previous bug caused 26/32 tasks to be skipped as "already done").
                 fr = (result.get("final_response") or "").strip()
                 void = (result.get("total_tool_calls", 0) == 0 and
-                        (not fr or fr.startswith(("[API_ERROR]", "[AGENT_STUCK]", "[MAX_STEPS_REACHED]"))))
+                        (not fr or fr.startswith(("[API_ERROR]", "[AGENT_STUCK]",
+                                                 "[MAX_STEPS_REACHED]", "[AGENT_ERROR]"))))
                 if void:
                     consecutive_failures += 1
                     delay = min(5 * (2 ** consecutive_failures), 120)
@@ -160,8 +161,9 @@ def main():
                     continue
                 consecutive_failures = 0
 
-                # checkpoint
-                ckpt = os.path.join(RESULTS_DIR, f"{task['id']}__{model_tag}__s{seed}.json")
+                # checkpoint (sanitize model slug: '/' would create a subpath)
+                slug = model_tag.replace("/", "_").replace("\\", "_")
+                ckpt = os.path.join(RESULTS_DIR, f"{task['id']}__{slug}__s{seed}.json")
                 with open(ckpt, "w", encoding="utf-8") as f:
                     json.dump(result, f, ensure_ascii=False, indent=2, default=str)
 
