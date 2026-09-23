@@ -149,8 +149,8 @@ def main():
                 # (previous bug caused 26/32 tasks to be skipped as "already done").
                 fr = (result.get("final_response") or "").strip()
                 void = (result.get("total_tool_calls", 0) == 0 and
-                        (not fr or fr.startswith(("[API_ERROR]", "[AGENT_STUCK]",
-                                                 "[MAX_STEPS_REACHED]", "[AGENT_ERROR]"))))
+                        (not fr or fr.startswith(("[API_ERROR]", "[AGENT_STUCK",
+                                                 "[MAX_STEPS_REACHED]", "[AGENT_ERROR"))))
                 if void:
                     consecutive_failures += 1
                     delay = min(5 * (2 ** consecutive_failures), 120)
