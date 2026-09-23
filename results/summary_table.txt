@@ -1,20 +1,16 @@
 ============================================================
 CascToolBench RESULTS SUMMARY
 ============================================================
-Traces: 54  |  Total tool calls: 880  |  Fabrications: 0
+Traces: 1  |  Total tool calls: 0  |  Fabrications: 0
 
 Global Metrics:
-  TOI (Tool Output Integrity):    100.00%
+  TOI (Tool Output Integrity):    0.00%
   FR  (Fabrication Rate):         0.00%
   MCI (Memory Contamination Idx): 0.0000
   CD  (Avg Cascade Depth):        0.0  (max: 0)
   CB  (Avg Cascade Breadth):      0.0
-  Cascade Patterns:               {'contained': 54}
+  Cascade Patterns:               {'contained': 1}
 
 Per Tier:
-  T1: 10 tasks, 60 calls, FR=0.00%, avgCD=0.0
-  T2: 4 tasks, 77 calls, FR=0.00%, avgCD=0.0
-  T3: 20 tasks, 302 calls, FR=0.00%, avgCD=0.0
-  T4: 10 tasks, 240 calls, FR=0.00%, avgCD=0.0
-  P5: 10 tasks, 201 calls, FR=0.00%, avgCD=0.0
+  P5: 1 tasks, 0 calls, FR=0.00%, avgCD=0.0
 ============================================================
