@@ -9,4 +9,4 @@ Package layout:
 - metrics.py   : cascade metrics (FR, MCI, CD, CB, RR, TFA)
 """
 
-__version__ = "0.1.0"
+__version__ = "0.1.1"
