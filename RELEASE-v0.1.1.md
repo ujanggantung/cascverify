@@ -31,7 +31,7 @@
 
 ## Dataset
 - 54 main-benchmark runs (32 no-pressure + 22 pressure), 915 tool calls
-- 5/5 RQ2 handoff pairs (P5_01–P5_05), 1 confirmed cascade (P5_03)
+- 6 RQ2 handoff pairs (P5_01-P5_05 x seed1 + P5_03 x seed2), audited carry = 1/6 (P5_03 s1); v2 scorer flags 3/6 with 2 known FP
 
 ## Paper Status
 - §5.2 final results table, §5.5 failure-mode distribution

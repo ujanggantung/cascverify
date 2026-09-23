@@ -256,11 +256,14 @@ for the next session's reasoning. This is the propagation dynamics the paper set
 measure: **an ungrounded premise crossed the session boundary despite a verify-first
 prompt and a healthy tool environment.**
 
-**Honest caveats.** n=5 pairs, 1 seed, 1 type of carry event (invented uptime params) —
-this is a demonstrated mechanism, not a rate estimate. Two pairs (P5_01, P5_04) showed
-clean rejection; two (P5_02, P5_05) showed benign inheritance (ports in error text).
-The v1 scorer's 5/5 was instrumentation error; the corrected v2 scorer reports the
-mechanism is present in 1/5 (P5_03) and we report both.
+**Honest caveats.** n=6 pairs (5 tasks × seed 1 + P5_03 × seed 2), 1 verified carry
+event. The derivation-aware v2 scorer flags 3/6; manual audit shows two are false
+positives (port numbers inside error messages, an HTTP 503 echoed from a real tool
+payload) and one is a genuine cross-session carry (P5_03 seed 1: invented "45 min
+downtime" referenced by Session B) — **audited rate 1/6**. P5_03 seed 2 did NOT
+fabricate (honest 100% uptime from a 0-error window), confirming the carry is a
+stochastic mechanism, not a deterministic pipeline. P5_01/P5_04 showed clean rejection
+of inherited numbers throughout.
 
 ### 7.3 RQ1 pressure condition (matched pairs, COMPLETE)
 
@@ -323,9 +326,10 @@ benchmark (CascToolBench, 32 tasks × 5 tiers, reproducible), the two-axis verif
 "memory cascade" as a measurable cross-session propagation — open-sourced at
 https://github.com/ujanggantung/cascverify.
 
-**Limitations.** Free-tier combo models only; one seed per task; n=22 matched pairs and
-n=5 handoff pairs — the handoff carry (1/5 by the derivation-aware scorer) is a
-demonstrated mechanism, not a rate. One detailed worked-example trace was lost to a
+**Limitations.** Free-tier combo models only; one seed per task (two for P5_03);
+n=22 matched pairs and n=6 handoff pairs — the handoff carry (audited 1/6;
+v2 scorer flags 3/6 with 2 known false positives) is a stochastic mechanism, not a rate.
+One detailed worked-example trace was lost to a
 checkpoint-overwrite bug (fixed in v0.1.1 via `--append`); the same fabrication class is
 preserved in the main pressure benchmark's P5_03 trace. Final answers under pressure are
 judged by heuristic + judge approximation without symbolic arithmetic equivalence (F8).
