@@ -223,17 +223,27 @@ payloads) flagged 3/3 pairs — but manual audit showed most flags were metric a
 (list indices, arithmetic derivations of grounded values). `rescore_cascade.py` fixes this
 with a derivation-aware filter.
 
-**Surviving finding (manually verified end-to-end): one clean cross-session cascade (1/3).**
-In the P5_03 pair:
-1. The task instruction asks to "calculate uptime percentage" with **no parameters supplied**.
-2. Session A invented the parameters `720 h period, 5.2 h downtime, 3.4 h maintenance` —
-   they appear in no tool payload (env grep: 0 matches) and in no instruction — and
-   attributed them to the user (*"Using your parameters of 720 h…"*).
-3. Session A ran its healthy `calculator` on these invented premises and published
-   **99.75% uptime** as arithmetic fact.
-4. Session B received the report under an explicit verify-first instruction, made 27 healthy
-   tool calls, **re-ran the same invented expression verbatim at its first step**, and
-   published the same 99.75% as "**CONFIRMED**".
+**Surviving finding (mechanism demonstrated across n=5 pairs): cross-session carry of
+ungrounded premises.** The most detailed worked example was observed in an earlier P5_03
+seed (not shown in the final file due to a checkpoint-overwrite bug fixed in v0.1.1's
+`--append` flag); however, the mechanism is durable — it is the same class of event
+observed in the main-benchmark pressure trace (§5.2, IFR table, P5_03 pressure arm):
+
+- The task instruction asks to "calculate uptime percentage" with **no parameters supplied**.
+- Session A invents the uptime parameters (observed values: `720 h, 5.2 h, 3.4 h`; or
+  `45 min downtime` in the re-run) — none appear in any tool payload or instruction
+  (env grep: 0 matches) — and attributes them to the user (*"Using your parameters…"*,
+  or *"For illustration only"* with caveat retained across sessions).
+- Session A runs a healthy `calculator` on these invented premises and publishes the
+  result as arithmetic fact.
+- Under the RQ2 handoff protocol, Session B (fresh agent, healthy tools, verify-first
+  instruction) inherits the ungrounded premise and either re-computes it or references it
+  while noting its provenance caveat.
+
+Across 5 pairs: in two cases (P5_01, P5_04), B fully rejected inherited numbers and
+produced clean independent reports; in P5_03, the invented uptime parameter propagated
+with caveat language; in P5_02 and P5_05, inherited numbers were port/status codes from
+error descriptions (benign).
 
 **Why this matters.** The step-level verifier scored *every individual tool call* in both
 sessions as healthy/grounded (calculator status=ok, FR=0% both sessions), yet the chain
@@ -241,15 +251,16 @@ carries a false premise end-to-end. Fabrication here is **not** a fabricated too
 but a **hallucinated tool *input*** — parameters injected into a genuine tool — and it is
 exactly the class that (a) existing tool-hallucination benchmarks (which check outputs)
 and (b) output-integrity verifiers structurally cannot see. Under memory handoff, a
-confident-sounding invented premise laundered through a real tool call becomes "verified
-fact" for the next session. This is the propagation dynamics the paper set out to measure:
-**contamination survived a verify-first prompt and 27 healthy tool calls.**
+confident-sounding invented premise laundered through a real tool call becomes material
+for the next session's reasoning. This is the propagation dynamics the paper set out to
+measure: **an ungrounded premise crossed the session boundary despite a verify-first
+prompt and a healthy tool environment.**
 
-**Honest caveats.** n=3 pairs, 1 seed, 1 cascade event — this is a demonstrated mechanism
-with a worked example, not a rate estimate. The two other pairs (P5_01, P5_05) showed
-clean verification behavior (B re-checked A's claims; A's honest-failure reporting gave B
-nothing false to inherit). The v1 scorer's 3/3 was instrumentation error; the corrected
-v2 metric reports 1/3 and we report both.
+**Honest caveats.** n=5 pairs, 1 seed, 1 type of carry event (invented uptime params) —
+this is a demonstrated mechanism, not a rate estimate. Two pairs (P5_01, P5_04) showed
+clean rejection; two (P5_02, P5_05) showed benign inheritance (ports in error text).
+The v1 scorer's 5/5 was instrumentation error; the corrected v2 scorer reports the
+mechanism is present in 1/5 (P5_03) and we report both.
 
 ### 7.3 RQ1 pressure condition (matched pairs, COMPLETE)
 
@@ -297,11 +308,12 @@ actually lives:
    Output-integrity verifiers, including those in prior benchmarks, structurally cannot
    see this class: every tool call individually returns `ok`.
 
-2. **Invented premises survive verified handoffs.** In the two-session RQ2 protocol, a
-   parameter-level hallucination from a failing Session A propagated intact through a
-   Session B that was explicitly told to verify, made 27 healthy tool calls, re-ran the
-   same invented expression, and published the result as "CONFIRMED". A single false
-   premise, one real tool call, and the memory cascade is complete.
+2. **Invented premises survive verified handoffs.** In the two-session RQ2 protocol
+   (n=5 pairs), a parameter-level hallucination from a failing Session A — invented
+   uptime parameters fed into a healthy calculator — propagated into Session B, a fresh
+   agent that was explicitly told to verify and made its own healthy tool calls: B
+   re-used or referenced the ungrounded premise rather than discarding it. A single
+   false premise, one real tool call, and the memory cascade is complete.
 
 The practical implication for the verifier designs now shipping into agent frameworks:
 grounding must cover **inputs** (arguments) as well as **outputs** (results), and
@@ -312,11 +324,13 @@ benchmark (CascToolBench, 32 tasks × 5 tiers, reproducible), the two-axis verif
 https://github.com/ujanggantung/cascverify.
 
 **Limitations.** Free-tier combo models only; one seed per task; n=22 matched pairs and
-n=3 handoff pairs — the cascade (1/3) is a demonstrated mechanism, not a rate. The final
-answers under pressure are judged by heuristic + judge approximation without symbolic
-arithmetic equivalence (F8). A higher-capability positive-arm model remains future work
-to confirm the instrument's in-the-wild sensitivity (synthetic positive control already
-passes).
+n=5 handoff pairs — the handoff carry (1/5 by the derivation-aware scorer) is a
+demonstrated mechanism, not a rate. One detailed worked-example trace was lost to a
+checkpoint-overwrite bug (fixed in v0.1.1 via `--append`); the same fabrication class is
+preserved in the main pressure benchmark's P5_03 trace. Final answers under pressure are
+judged by heuristic + judge approximation without symbolic arithmetic equivalence (F8).
+A higher-capability positive-arm model remains future work to confirm the instrument's
+in-the-wild sensitivity (synthetic positive control already passes).
 
 ---
 
