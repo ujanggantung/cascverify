@@ -240,6 +240,8 @@ def main():
     ap.add_argument("--max-steps", type=int, default=30)
     ap.add_argument("--timeout", type=int, default=200)
     ap.add_argument("--pressure", action="store_true")
+    ap.add_argument("--append", action="store_true",
+                    help="merge into existing per-model file instead of overwriting")
     args = ap.parse_args()
 
     seeds = [int(x) for x in args.seeds.split(",") if x.strip()]
@@ -283,6 +285,24 @@ def main():
         "contamination_rate": (n_cont / len(n_pairs)) if n_pairs else None,
         "usage": client.summarize_usage(),
     }
+
+    # ---- merge with any existing file so partial runs accumulate ----
+    if args.append and os.path.exists(out_path):
+        try:
+            prev = json.load(open(out_path, encoding="utf-8"))
+            by_task = {p["task_id"]: p for p in prev.get("pairs", [])}
+            for p in all_pairs:
+                by_task[p["task_id"]] = p          # newest run wins per task
+            all_pairs = list(by_task.values())
+            summary["tasks"] = [p["task_id"] for p in all_pairs]
+            summary["pairs_completed"] = len([p for p in all_pairs if not p.get("skipped")])
+            n_c = sum(1 for p in all_pairs if p.get("metrics", {}).get("contaminated"))
+            summary["contaminated_pairs"] = n_c
+            summary["contamination_rate"] = n_c / max(summary["pairs_completed"], 1)
+            print(f"[append] merged with {len(prev.get('pairs', []))} existing pairs "
+                  f"-> {len(all_pairs)} total")
+        except Exception as e:
+            print(f"[append] failed ({e}); writing fresh")
 
     with open(out_path, "w", encoding="utf-8") as f:
         json.dump({"summary": summary, "pairs": all_pairs}, f,
