@@ -73,19 +73,20 @@ def main():
         purity = run_model_purity(r)
         r["_served_model"] = sm
         r["_model_purity"] = purity
-        by_served[sm].append(r)
+        r["_cond"] = "pressure" if r.get("pressure") else "plain"
+        by_served[(sm, r["_cond"])].append(r)
 
     n_completed_tiers = Counter(r.get("tier", "?") for r in runs)
     print(f"Runs loaded: {len(runs)} | skipped (no classification): {len(skipped)}")
     print(f"Tier coverage: {dict(n_completed_tiers)}")
-    print(f"Served models observed: {sorted(by_served)}")
+    print(f"Served-model × condition groups: {sorted(set(k[0] + ' [' + k[1] + ']' for k in by_served))}")
     print()
 
-    # aggregate per served model
+    # aggregate per (served model, condition)
     per_model = {}
-    for sm, group in sorted(by_served.items()):
+    for (sm, cond), group in sorted(by_served.items()):
         agg = compute_aggregate([g["classification"] for g in group])
-        per_model[sm] = {
+        per_model[f"{sm} [{cond}]"] = {
             "n_runs": len(group),
             "task_ids": [g["task_id"] for g in group],
             "avg_model_purity": round(sum(g["_model_purity"] for g in group) / len(group), 3),
