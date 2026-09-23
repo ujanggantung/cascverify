@@ -10,12 +10,19 @@ Tool-augmented LLM agents increasingly operate autonomously over long horizons, 
 tool results in persistent memory. Prior work establishes that tool hallucinations occur
 (Xu et al., 2025) and that memory contamination is possible (Zhang & Li, 2026), but the
 *propagation dynamics* of a single fabricated tool output through subsequent agent reasoning
-remain unmeasured. We introduce **CascToolBench**, a benchmark of [N] multi-step tasks across
-four difficulty tiers with controlled tool-failure injection, and a step-level annotation
-pipeline that classifies each failed tool call as honestly handled or fabricated. We define
-cascade-specific metrics — Cascade Depth (CD), Cascade Breadth (CB), Memory Contamination
-Index (MCI), and Recovery Rate (RR) — and evaluate [M] frontier LLMs under identical failure
-conditions. We find [FINDINGS TBD].
+remain unmeasured. We introduce **CascToolBench**, a benchmark of 32 multi-step tasks across
+five difficulty tiers with controlled, realistic tool-failure injection (error / empty /
+garbage / timeout), and a step-level annotation pipeline that classifies each failed tool
+call as honestly handled or fabricated. We define cascade-specific metrics — Cascade Depth
+(CD), Cascade Breadth (CB), Memory Contamination Index (MCI), and Recovery Rate (RR) — and
+evaluate five models under identical, matched failure conditions in two arms (failure alone;
+failure plus explicit answer pressure). Across 45 completed runs and 800+ tool calls we
+observe **zero fabrication and zero cascade**: every failed call was either retried with
+corrected arguments or openly reported, and answer pressure changed report *style* without
+changing report *integrity*. We validate the instrument itself with unit tests and a
+positive-control trace that it correctly flags (FR=0.67, cascade pattern "chain"), so the
+null result is a property of the models, not a blind detector. CascToolBench and the
+`cascverify` runtime verifier are released open-source.
 
 **Contributions:**
 1. CascToolBench — first benchmark isolating tool-output fabrication *propagation* over multi-step trajectories.
