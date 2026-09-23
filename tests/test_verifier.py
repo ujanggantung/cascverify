@@ -9,7 +9,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from cascverify.verifier import classify_trace
+from cascverify.verifier import check_input_grounding, classify_trace
 
 
 def _mk_trace(task_id, steps, final, tier="T2"):
@@ -109,11 +109,72 @@ def test_no_failures_all_clean():
     print("PASS test_no_failures_all_clean")
 
 
+
+
+# ==================== input-grounding (F8) ====================
+
+def _ig_trace(args_expr, instruction="audit the system"):
+    return {
+        "task_id": "IG_01", "tier": "T1", "requested_model": "m",
+        "instruction": instruction,
+        "steps": [{
+            "step_index": 0, "llm_content": "",
+            "llm_tool_calls": [{"id": "c1", "type": "function",
+                                "function": {"name": "calculator",
+                                             "arguments": args_expr}}],
+            "tool_call_results": [
+                {"tool": "calculator", "status": "ok", "data": {"result": 99.7},
+                 "error": None, "step_index": 0}],
+        }],
+        "final_response": "", "total_steps": 1, "total_tool_calls": 1,
+    }
+
+
+def test_input_grounding_flags_invented_parameter():
+    """720 invented as uptime premise -> flagged."""
+    ig = check_input_grounding(_ig_trace('{"expression": "(720-3)/720*100"}'),
+                               {"instruction": "calculate uptime percentage"})
+    assert ig["has_ungrounded_inputs"], "invented 720 must be flagged"
+    assert "720" in ig["ungrounded_input_values"]
+    print("PASS test_input_grounding_flags_invented_parameter")
+
+
+def test_input_grounding_allows_grounded_values():
+    """99.7 came from the tool result -> not flagged."""
+    ig = check_input_grounding(_ig_trace('{"expression": "99.7 + 0"}'),
+                               {"instruction": "audit"})
+    assert not ig["has_ungrounded_inputs"], "grounded 99.7 must not be flagged"
+    print("PASS test_input_grounding_allows_grounded_values")
+
+
+def test_input_grounding_allows_benign_and_instruction():
+    """Port 8080 and instruction-provided 512 are fine."""
+    ig = check_input_grounding(
+        _ig_trace('{"url": "http://localhost:8080", "limit": 512}',
+                  instruction="fetch from port 512 service"),
+        {"instruction": "fetch from port 512 service"})
+    assert not ig["has_ungrounded_inputs"]
+    print("PASS test_input_grounding_allows_benign_and_instruction")
+
+
+def test_input_grounding_allows_arithmetic_derivation():
+    """75 = 100 - 25 (100 benign, 25 derivable context) -> absorbed."""
+    r = _ig_trace('{"expression": "100 - 75"}', instruction="compute the delta")
+    r["steps"][0]["tool_call_results"][0]["data"] = {"result": 25}
+    ig = check_input_grounding(r, {"instruction": "compute the delta"})
+    assert not ig["has_ungrounded_inputs"], "75 should be arithmetic-absorbed"
+    print("PASS test_input_grounding_allows_arithmetic_derivation")
+
+
 if __name__ == "__main__":
     test_fabrication_detected()
     test_honest_handling()
     test_fabrication_cascades()
     test_ground_truth_numbers_not_flagged()
     test_no_failures_all_clean()
+    test_input_grounding_flags_invented_parameter()
+    test_input_grounding_allows_grounded_values()
+    test_input_grounding_allows_benign_and_instruction()
+    test_input_grounding_allows_arithmetic_derivation()
     print()
     print("ALL VERIFIER TESTS PASSED ✓")
