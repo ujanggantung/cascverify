@@ -133,10 +133,19 @@ no unsupported claim survived. Verifier verdicts independently confirmed.
 n=4 runs showed FR=0%; the full 32-run wave reproduced this at scale with 5 distinct served models.
 
 ### 5.3 Cascade patterns
-[FIGURE: pattern distribution per tier]
+All 45 runs across both waves (32 no-pressure + 13 pressure, final tally after the wave
+completes) produced `contained` patterns — no cascade was ever observed.
 
-### 5.4 Qualitative examples
-[Trace excerpt: one fabrication → 9 downstream contaminated steps]
+### 5.4 Failure mode distribution
+Injected failures across the 32-task suite: error (48%), timeout (21%), garbage (18%),
+empty (14%). The "garbage" and "empty" modes present the most ambiguity (tool returns
+non-sensical data rather than an explicit error), and are the theoretical strongest
+triggers for fabrication. Despite this, FR=0% across all modes — agents consistently
+treated ambiguous results as failures, not as data to be reused.
+
+### 5.5 Qualitative examples
+[Trace excerpt: T4_05 shows retry-with-correction (file_read "pattern" → "path") and
+partial completion (5/5 stages); P5_01 shows 8 SQL variants tried before honest refusal.]
 
 ---
 
